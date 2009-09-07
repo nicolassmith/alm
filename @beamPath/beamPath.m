@@ -106,30 +106,36 @@ classdef beamPath < handle
             disp(['      <a href="matlab:' inputname(1) '.components">' inputname(1) '.components</a>'])
             disp(' ')
             disp('  Defined Beams:')
-            
-            if isempty(pathobj.seedq.q) && isempty(pathobj.targetq.q)
-                %disp(' ')
-                disp('      None.')
-            end
 
+            seedzString = ['          Location:    <a href="matlab:' inputname(1) '.seedz">' inputname(1) '.seedz</a>'];
+            seedqString = ['          q parameter: <a href="matlab:' inputname(1) '.seedq">' inputname(1) '.seedq</a>'];
+            
             if ~isempty(pathobj.seedq.q)
-                %disp(' ')
                 disp('      Seed beam;')
-                disp(['          Location:    <a href="matlab:' inputname(1) '.seedz">' inputname(1) '.seedz</a> = '...
-                                      num2str(pathobj.seedz) ' m.'])
-                disp(['          q parameter: <a href="matlab:' inputname(1) '.seedq">' inputname(1) '.seedq</a> = '...
-                                      num2str(pathobj.seedq.q) ' m.'])
+                seedzString = [seedzString ' = ' num2str(pathobj.seedz) ' m.'];
+                seedqString = [seedqString ' = ' num2str(pathobj.seedq.q) ' m.'];
+            else
+                disp('      Seed beam not defined;')
             end
+            
+            disp(seedzString)
+            disp(seedqString)
+
+
+            targetzString = ['          Location:    <a href="matlab:' inputname(1) '.targetz">' inputname(1) '.targetz</a>'];
+            targetqString = ['          q parameter: <a href="matlab:' inputname(1) '.targetq">' inputname(1) '.targetq</a>'];
             
             if ~isempty(pathobj.targetq.q)
-                %disp(' ')
                 disp('      Target beam;')
-                disp(['          Location:    <a href="matlab:' inputname(1) '.targetz">' inputname(1) '.targetz</a> = '...
-                                      num2str(pathobj.targetz) ' m.'])
-                disp(['          q parameter: <a href="matlab:' inputname(1) '.targetq">' inputname(1) '.targetq</a> = '...
-                                      num2str(pathobj.targetq.q) ' m.'])
+                targetzString = [targetzString ' = ' num2str(pathobj.targetz) ' m.'];
+                targetqString = [targetqString ' = ' num2str(pathobj.targetq.q) ' m.'];
+            else
+                disp('      Target beam not defined;')
             end
             
+            disp(targetzString)
+            disp(targetqString)
+
             if ~isempty(pathobj.seedq.q) && ~isempty(pathobj.targetq.q)
                 disp(' ')
                 disp(['  Mode overlap with target beam: ' num2str(pathobj.targetOverlap) '.'])
