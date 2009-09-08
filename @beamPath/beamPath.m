@@ -157,7 +157,17 @@ classdef beamPath < handle
         end
         function pathObjOut = branchPath(pathobj,zlink)
             % -- beamPath.branchPath --
+            % create a new beamPath object which is identical to the calling object,
+            % but has a seed beam which is calculated from the seed beam in the first
+            % object but located in another place.
+            % 
+            % this can be useful when you want to make a new path which has the same
+            % beam as the original path at a given location, and then allows you to alter
+            % the components in the new path without changing the beam at the location you chose.
+            %
             % syntax: path2 = path1.branchPath(zlink)
+            % zlink is the position of the beam you would like to be the seed beam of the new
+            % path.
             qlink = pathobj.qPropagate(zlink);
             pathObjOut = pathobj.duplicate;
 
@@ -179,7 +189,7 @@ classdef beamPath < handle
             disp(['  Contains ' num2str(length(pathobj.components)) ' components.'])
             disp(['      <a href="matlab:' inputname(1) '.components">' inputname(1) '.components</a>'])
             disp(' ')
-            disp('  Defined Beams:')
+            disp('  Beams:')
 
             seedzString = ['          Location:    <a href="matlab:' inputname(1) '.seedz">' inputname(1) '.seedz</a>'];
             seedqString = ['          q parameter: <a href="matlab:' inputname(1) '.seedq">' inputname(1) '.seedq</a>'];
@@ -671,7 +681,12 @@ classdef beamPath < handle
         end
         function plotBeams(pathobj,zdomain,yoffset,colorString)
             % -- beamPath.plotBeams --
+            % Annotates the plot object with textarrow objects which show the location
+            % of the seed and target beams, and also displays some information about them.
+            % Example:
             % path1.plotBeams(zdomain,yoffset,colorString)
+            % yoffset offsets the textarrows in the y direction (default is 0). colorString sets the 
+            % color of the textarrow objects ('r' will make them red etc.).
             if nargin < 2
                 zdomain = [-Inf Inf];
             end
@@ -716,8 +731,15 @@ classdef beamPath < handle
         end
         function plotSummary(pathobj,zdomain)
             % -- beamPath.plotSummary --
-            % 
-            % 
+            % Plots a summary of the beampath. This is a two panel plot with beam 
+            % width on the top and gouy phase on the bottom.
+            % The components and beams are also plotted and the axis are labeled.
+            % Example:
+            % path1.plotSummary(zdomain)
+            % Plots the plot summary over the domain given in zdomain, 
+            % if zdomain is omitted, it chooses a domain based on what is
+            % in the beam path
+            
             if nargin<2
                 zlist = [pathobj.components.z];
                 if ~isempty(pathobj.seedq.q)
@@ -1002,8 +1024,12 @@ classdef beamPath < handle
         % used for beam width fitting
         function fittedPath = fitBeamWidth(pathobj,zPred,widthPred)
             % -- beamPath.fitBeamWidth --
-            % 
-            % 
+            % Fits a given set of beam width and position data and returns a beamPath
+            % object with a seed beam to match to the data.
+            % Example:
+            % path2 = path1.fitBeamWidth(zPred,widthPred)
+            % zPred is the position data and widthPred is the width data to fit to. 
+            % Both should be array vectors of the same length.
             if nargin<3
                 error('Not enough input arguments for fitBeamWidth')
             end
