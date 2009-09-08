@@ -11,3 +11,5 @@ example scripts (located in examples/):
 pslmode.m - showing some basic uses
 choosecompsexample.m - shows how to use the chooseComponents method
 beamfitexample.m - uses the beam width fitting function
+
+?
