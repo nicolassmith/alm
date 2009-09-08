@@ -7,6 +7,7 @@ shouldn't be in the path), or do your work in that folder.
 
 type 'help alm' in MATLAB to begin
 
-example scripts:
+example scripts (located in examples/):
 pslmode.m - showing some basic uses
 choosecompsexample.m - shows how to use the chooseComponents method
+beamfitexample.m - uses the beam width fitting function
