@@ -272,6 +272,11 @@ classdef beamPath < handle
             % returned, where 1.0 is perfect overlap.
             % Example:
             % path1.targetOverlap()
+            
+            if isempty(pathobj.targetz) || isempty(pathobj.targetq.q)
+                error('Can''t do mode overlap, no target beam is defined.')
+            end
+            
             ztarget = pathobj.targetz;
             qAtTarget = pathobj.qPropogate(ztarget);
             overlapFrac = overlap(pathobj.targetq,qAtTarget);
@@ -387,6 +392,10 @@ classdef beamPath < handle
                 zqin = pathobj.seedz;
             end
             
+            if isempty(qin.q) || isempty(zqin)
+                error('Initial beam is undefined. Either define a seed beam, or use more input arguments')
+            end
+            
             zlength = length(zdomain);
             qout(zlength,1) = beamq;
             
@@ -412,6 +421,10 @@ classdef beamPath < handle
             if nargin<3
                 qin = pathobj.seedq;
                 zqin = pathobj.seedz;
+            end
+            
+            if isempty(qin.q) || isempty(zqin)
+                error('Initial beam is undefined. Either define a seed beam, or use more input arguments.')
             end
             
             zlength = length(zdomain);
@@ -641,8 +654,17 @@ classdef beamPath < handle
                     zlist = [zlist,pathobj.targetz];
                 end
                 
+                if isempty(zlist)
+                    error('Nothing to plot')
+                end
+                
                 zmin = min(zlist);
                 zmax = max(zlist);
+                
+                if zmin == zmax %make a very basic plot if there is only one object to plot
+                    zmin = zmin - 0.5;
+                    zmax = zmin + 1;
+                end
                 
                 zlength = zmax - zmin;
                 
@@ -688,7 +710,7 @@ classdef beamPath < handle
             
             lvargin = length(varargin);
             if lvargin<1  
-                error('Sorry, needs arguments for now')
+                error('Input arguments are required for optimizePath.')
             end
             
             % check for options
@@ -753,7 +775,7 @@ classdef beamPath < handle
 
             lvargin = length(varargin);
             if lvargin<1
-                error('Sorry, needs arguments.')
+                error('Input arguments are required for chooseComponents.')
             end
 
             % check for options
@@ -909,6 +931,9 @@ classdef beamPath < handle
             % -- beamPath.fitBeamWidth --
             % 
             % 
+            if nargin<3
+                error('Not enough input arguments for fitBeamWidth')
+            end
             
             qValsStart = [real(pathobj.seedq.q) imag(pathobj.seedq.q)];
             fitqVals = fminsearch(@(qVals)pathobj.beamFitError(qVals,zPred,widthPred),qValsStart);
