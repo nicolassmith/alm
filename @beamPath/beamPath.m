@@ -1,6 +1,80 @@
 classdef beamPath < handle
-    % beamPath help
-    % 
+    % -- beamPath --
+    % A beam path object consists of a few things:
+    %
+    %   * A seed beam. This defines the "input beam" of your system.
+    %           When calculating the beam properties somewhere in a beam
+    %           path, this is the origin of the beam which is propagated 
+    %           around the system. It is defined by a beamq object which is
+    %           stored in the beamPath.seedq property, also the location
+    %           of the seed beam in the beam path is defined by the 
+    %           beamPath.seedz property. This beam can be defined anywhere
+    %           in the beam path and need not be at the "beginning."
+    %
+    %   * A target beam. This defines the "output beam" of your system.
+    %           This is the beam which you would like to match into.
+    %           It is defined similarly to the seed beam by the properties
+    %           beamPath.targetq and beamPath.targetz. It is also used by 
+    %           the various optimization routines when trying to maximize 
+    %           the mode overlap with the seed beam.
+    %
+    %   * Components. These are the various optical components in the beam
+    %           path which affect the propagation of beams in the path.
+    %           It is a vector array of objects in the component class.
+    %           Each component has a certain transfer matrix and position,
+    %           these properties are stored in the component class.
+    %
+    % The beamPath class also has methods which facilitate in calculating 
+    %     beam propagation and laying out your beam path.
+    %
+    % Methods:
+    %  - These methods are used for making beamPath objects:
+    %     beamPath - the beam path constructor, to create a blank beam path
+    %         object.
+    %     <a href="matlab:help beamPath.duplicate">duplicate</a> - creates a copy of the calling beamPath object.
+    %     <a href="matlab:help beamPath.branchPath">branchPath</a> - creates a new beamPath object identical to the calling
+    %         object, but has a seed beam defined as a propagated beam from the 
+    %         original beamPath object.
+    %  - These methods allow manipulation of the components in a beam path:
+    %     <a href="matlab:help beamPath.addComponent">addComponent</a> - adds a component to the beam path.
+    %     <a href="matlab:help beamPath.deleteComponent">deleteComponent</a> - deletes a component from the beam path.
+    %     <a href="matlab:help beamPath.moveComponent">moveComponent</a> - changes the position of a component in the beam path.
+    %     <a href="matlab:help beamPath.replaceComponent">replaceComponent</a> - replaces a component in the beam path with another
+    %         component.
+    %     <a href="matlab:help beamPath.component">component</a> - returns the requested component object, usually referenced
+    %         by label.
+    %     <a href="matlab:help beamPath.findComponentIndex">findComponentIndex</a> - returns the list index of the requested component.
+    %  - These methods are for calculating beam propagation in a beam path:
+    %     <a href="matlab:help beamPath.seedWaist">seedWaist</a> - defines the seed beam as a waist of a given size at a given
+    %         location.
+    %     <a href="matlab:help beamPath.targetWaist">targetWaist</a> - defines the target beam as a waist of a given size at a given
+    %         location.
+    %     <a href="matlab:help beamPath.qPropagate">qPropagate</a> - returns a beamq object at a desired position given an 
+    %         input beam, usually the seed beam.
+    %     <a href="matlab:help beamPath.getTransferMatrix">getTransferMatrix</a> - returns the ABCD transfer matrix between two points 
+    %         in the beam path.
+    %     <a href="matlab:help beamPath.gouyPhase">gouyPhase</a> - calculates the accumulated gouy phase from the input beam
+    %         (usually the seed beam) to a given location.
+    %     <a href="matlab:help beamPath.targetOverlap">targetOverlap</a> - calculates mode overlap of the seed and target beams.
+    %  - These methods are for analyzing properties of a beam path:
+    %     <a href="matlab:help beamPath.gouySeperation">gouySeperation</a> - calculates the accumulated gouy phase between two
+    %         components in the beam path.
+    %  - These methods are for making plot representations of a beam path:
+    %     <a href="matlab:help beamPath.plotBeamWidth">plotBeamWidth</a> - plots the beam width calculated from the seed beam.
+    %     <a href="matlab:help beamPath.plotGouyPhase">plotGouyPhase</a> - plots the accumulated gouy phase from the seed beam.
+    %     <a href="matlab:help beamPath.plotComponents">plotComponents</a> - plots the components in a beam path.
+    %     <a href="matlab:help beamPath.plotBeams">plotBeams</a> - plots information about the seed and target beams.
+    %     <a href="matlab:help beamPath.plotSummary">plotSummary</a> - makes a plot with a summary of the beam path.
+    %  - These methods are for manipulating the components in a path to optimize
+    %        the mode overlap to the target beam.
+    %     <a href="matlab:help beamPath.optimizePath">optimizePath</a> - adjusts the positions of components in the path in order
+    %         to maximize the mode overlap.
+    %     <a href="matlab:help beamPath.chooseComponents">chooseComponents</a> - chooses components from lists supplied in the input 
+    %         arguments in order to maximize mode overlap.
+    %  - These methods are for fitting the seed beam to measurements of beam width.
+    %     <a href="matlab:help beamPath.fitBeamWidth">fitBeamWidth</a> - returns a beamPath object identical to the calling object, 
+    %         but with a seed beam which is chosen to best match the supplied beam
+    %         width values.
     properties (Dependent)
         components;
     end
@@ -51,7 +125,7 @@ classdef beamPath < handle
             
             pathdup = pathobj.duplicate;
             pathdup.seedq.q = qVals(1)+i*qVals(2);
-            qout = pathdup.qPropogate(zPred);
+            qout = pathdup.qPropagate(zPred);
             
             width = [qout.beamWidth];
             
@@ -84,7 +158,7 @@ classdef beamPath < handle
         function pathObjOut = branchPath(pathobj,zlink)
             % -- beamPath.branchPath --
             % syntax: path2 = path1.branchPath(zlink)
-            qlink = pathobj.qPropogate(zlink);
+            qlink = pathobj.qPropagate(zlink);
             pathObjOut = pathobj.duplicate;
 
             pathObjOut.seedq = qlink;
@@ -265,21 +339,64 @@ classdef beamPath < handle
             indexout = listCompare(1);
         end
         % these methods are for calculating beam propagation given a beam path
-        function overlapFrac = targetOverlap(pathobj)
-            % -- beamPath.targetOverlap --
-            % This calculates the result of propogating the 'seed' beam through
-            % the beampath to the 'target.' Here the mode overlap is calculated and
-            % returned, where 1.0 is perfect overlap.
+        function seedWaist(pathobj,waistSize,waistPos,lambda)
+            % -- beamPath.seedWaist --
+            % Sets the seed beam of the beam path to a waist of given size and position.
             % Example:
-            % path1.targetOverlap()
-            
-            if isempty(pathobj.targetz) || isempty(pathobj.targetq.q)
-                error('Can''t do mode overlap, no target beam is defined.')
+            % path1.seedWaist(w0,position,lambda)
+            % This will set the seed beam to be a waist at z = position
+            % with beam width = w0. The wavelength is set by lambda, if omitted,
+            % the default value is 1064nm.
+            if nargin<4
+                lambda = 1064e-9;
             end
             
-            ztarget = pathobj.targetz;
-            qAtTarget = pathobj.qPropogate(ztarget);
-            overlapFrac = overlap(pathobj.targetq,qAtTarget);
+            pathobj.seedq = beamq.beamWaistAndZ(waistSize,0,lambda);
+            pathobj.seedz = waistPos;
+            
+        end
+        function targetWaist(pathobj,waistSize,waistPos,lambda)
+            % -- beamPath.targetWaist --
+            % Sets the target beam of the beam path to a waist of given size and position.
+            % Example:
+            % path1.targetWaist(w0,position,lambda)
+            % This will set the target beam to be a waist at z = position
+            % with beam width = w0. The wavelength is set by lambda, if omitted,
+            % the default value is 1064nm.
+            if nargin<4
+                lambda = 1064e-9;
+            end
+            
+            pathobj.targetq = beamq.beamWaistAndZ(waistSize,0,lambda);
+            pathobj.targetz = waistPos;
+        end
+        function qout = qPropagate(pathobj,zdomain,qin,zqin)
+            % -- beamPath.qPropagate --
+            % Propagate a beam q parameter through your beam path.
+            % Example:
+            % qout = path1.qPropagate(z,qin,zqin)
+            % Notes:
+            % If z is a vector of postitions, qout will be a vector of beamq objects.
+            % If qin and zqin are omitted, the seedq and seedz properties of 
+            %    the path object will be used.
+            if nargin<3
+                qin = pathobj.seedq;
+                zqin = pathobj.seedz;
+            end
+            
+            if isempty(qin.q) || isempty(zqin)
+                error('Initial beam is undefined. Either define a seed beam, or use more input arguments')
+            end
+            
+            zlength = length(zdomain);
+            qout(zlength,1) = beamq;
+            
+            for j = 1:zlength;
+                transferM = pathobj.getTransferMatrix(zqin,zdomain(j));
+                qout(j) = qin.transform(transferM);
+                qin = qout(j);
+                zqin = zdomain(j);
+            end
         end
         function Mout = getTransferMatrix(pathobj,z1,z2) %needs better support of components with length
             % -- beamPath.getTransferMatrix --
@@ -346,66 +463,6 @@ classdef beamPath < handle
             %invert if it needs it
             Mout = Mout^(invertPower);
         end
-        function seedWaist(pathobj,waistSize,waistPos,lambda)
-            % -- beamPath.seedWaist --
-            % Sets the seed beam of the beam path to a waist of given size and position.
-            % Example:
-            % path1.seedWaist(w0,position,lambda)
-            % This will set the seed beam to be a waist at z = position
-            % with beam width = w0. The wavelength is set by lambda, if omitted,
-            % the default value is 1064nm.
-            if nargin<4
-                lambda = 1064e-9;
-            end
-            
-            pathobj.seedq = beamq.beamWaistAndZ(waistSize,0,lambda);
-            pathobj.seedz = waistPos;
-            
-        end
-        function targetWaist(pathobj,waistSize,waistPos,lambda)
-            % -- beamPath.targetWaist --
-            % Sets the target beam of the beam path to a waist of given size and position.
-            % Example:
-            % path1.targetWaist(w0,position,lambda)
-            % This will set the target beam to be a waist at z = position
-            % with beam width = w0. The wavelength is set by lambda, if omitted,
-            % the default value is 1064nm.
-            % see also beamPath.seedWaist
-            if nargin<4
-                lambda = 1064e-9;
-            end
-            
-            pathobj.targetq = beamq.beamWaistAndZ(waistSize,0,lambda);
-            pathobj.targetz = waistPos;
-        end
-        function qout = qPropogate(pathobj,zdomain,qin,zqin)
-            % -- beamPath.qPropogate --
-            % Propogate a beam q parameter through your beam path.
-            % Example:
-            % qout = path1.qPropogate(z,qin,zqin)
-            % Notes:
-            % If z is a vector of postitions, qout will be a vector of beamq objects.
-            % If qin and zqin are omitted, the seedq and seedz properties of 
-            %    the path object will be used.
-            if nargin<3
-                qin = pathobj.seedq;
-                zqin = pathobj.seedz;
-            end
-            
-            if isempty(qin.q) || isempty(zqin)
-                error('Initial beam is undefined. Either define a seed beam, or use more input arguments')
-            end
-            
-            zlength = length(zdomain);
-            qout(zlength,1) = beamq;
-            
-            for j = 1:zlength;
-                transferM = pathobj.getTransferMatrix(zqin,zdomain(j));
-                qout(j) = qin.transform(transferM);
-                qin = qout(j);
-                zqin = zdomain(j);
-            end
-        end
         function [gPhase,qout] = gouyPhase(pathobj,zdomain,qin,zqin)
             % -- beamPath.gouyPhase --
             % Returns the accumulated gouy phase (in degrees) from zqin to zdomain, given
@@ -416,7 +473,7 @@ classdef beamPath < handle
             % it also returns a beamq array (qout) if you don't want to do the propogation
             % calculation twice.
             % (reference: Erden, Ozaktas [1997])
-            % see also beamPath.qPropogate
+            % see also beamPath.qPropagate
             
             if nargin<3
                 qin = pathobj.seedq;
@@ -451,6 +508,22 @@ classdef beamPath < handle
                 qin = qout(j);
                 zqin = zdomain(j);
             end
+        end
+        function overlapFrac = targetOverlap(pathobj)
+            % -- beamPath.targetOverlap --
+            % This calculates the result of propogating the 'seed' beam through
+            % the beampath to the 'target.' Here the mode overlap is calculated and
+            % returned, where 1.0 is perfect overlap.
+            % Example:
+            % path1.targetOverlap()
+            
+            if isempty(pathobj.targetz) || isempty(pathobj.targetq.q)
+                error('Can''t do mode overlap, no target beam is defined.')
+            end
+            
+            ztarget = pathobj.targetz;
+            qAtTarget = pathobj.qPropagate(ztarget);
+            overlapFrac = overlap(pathobj.targetq,qAtTarget);
         end
         % these are for analyzing properties of the beam path.
         function gPhase = gouySeperation(pathobj,compLabel1,compLabel2,dontWrap)
@@ -497,7 +570,7 @@ classdef beamPath < handle
             % plot1 = path1.plotBeamWidth(z,'b')
             % plot2 = path2.plotBeamWidth(z,'r')
             % legend([plot1 plot2],'Beam Path 1','Beam Path 2')
-            qplot = pathobj.qPropogate(zdomain);
+            qplot = pathobj.qPropagate(zdomain);
             
             ploth = qplot.plotBeamWidth(zdomain,varargin{:});
             if nargout>0
@@ -700,7 +773,7 @@ classdef beamPath < handle
             % -- beamPath.optimizePath --
             % This function will return a new path object after having optimized the component
             % positions of a given path object in order to maximize the overlap of 
-            % the beem propogated from the seed and the beam at the target.
+            % the beem propagated from the seed and the beam at the target.
             % The arguments should go like this:
             % newPath = oldPath.optimizePath('lens1',[-1.5,-1],'lens3',[2,2.3],'target',[4,inf])
             % (where oldPath is an existing beamPath object with at least the components 'lens1' and 'lens3'
