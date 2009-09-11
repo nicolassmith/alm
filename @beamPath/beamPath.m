@@ -538,7 +538,12 @@ classdef beamPath < handle
         % these are for analyzing properties of the beam path.
         function gPhase = gouySeperation(pathobj,compLabel1,compLabel2,dontWrap)
             % -- beamPath.gouySeperation --
+            % Returns the accumulated gouy phase between two components in the beam path.
             % syntax: gouyPhase = path1.gouySeperation('label1','label2')
+            % 
+            % By default this function will return values in the range -90 to +90, 
+            % to have the function return the gouy phase unwrapped, give the string
+            % 'nowrap' as the third argument
             if nargin<4
                 dontWrap = '';
             end
@@ -557,6 +562,119 @@ classdef beamPath < handle
                     if ~strcmpi(dontWrap,'nowrap')
                         gPhase(jj,kk) = mod(gPhase(jj,kk)+90,180)-90;
                     end    
+                end
+            end
+        end
+        function sensitivity = angleCoupling(pathobj,varargin)
+            % -- angle coupling --
+            %
+            
+            % error if no targetq
+            
+            if nargin<2
+                complist = pathobj.components;
+            else
+                lvargin = length(varargin);
+                complist(lvargin,1) = component;
+                for jj = 1:lvargin
+                    complist(jj) = pathobj.component(varargin{jj});
+                end
+            end
+            
+            numComps = length(complist);
+            
+            sensitivity = zeros(1,numComps);
+            
+            for kk = 1:numComps
+                if strcmp(complist(kk).type,'curved mirror') || strcmp(complist(kk).type,'flat mirror')
+                    %calculate
+                    S = pathobj.getTransferMatrix(complist(kk).z,pathobj.targetz);
+                    
+                    w0 = pathobj.targetq.waistSize;
+                    divAngle = pathobj.targetq.divergenceAngle;
+                    
+                    % the factor of 2 is because the beam angle is twice the mirror angle
+                    sensitivity(kk) = 2* sqrt( (S(1,2)/w0)^2 + (S(2,2)/divAngle)^2 );
+                else
+                    sensitivity(kk) = 0;
+                end
+            end
+        end
+        function sensitivity = bounceCoupling(pathobj,varargin)
+            % -- bounce coupling --
+            %
+            
+            % error if no targetq
+            
+            if nargin<2
+                complist = pathobj.components;
+            else
+                lvargin = length(varargin);
+                complist(lvargin,1) = component;
+                for jj = 1:lvargin
+                    complist(jj) = pathobj.component(varargin{jj});
+                end
+            end
+            
+            numComps = length(complist);
+            
+            sensitivity = zeros(1,numComps);
+            
+            for kk = 1:numComps
+                if strcmp(complist(kk).type,'curved mirror')
+                    %calculate
+                    S = pathobj.getTransferMatrix(complist(kk).z,pathobj.targetz);
+                    
+                    w0 = pathobj.targetq.waistSize;
+                    divAngle = pathobj.targetq.divergenceAngle;
+                    f = complist(kk).parameters.ROC / 2;
+                    
+                    sensitivity(kk) = sqrt( (S(1,2)/w0)^2 + (S(2,2)/divAngle)^2 )/abs(f);
+                else
+                    sensitivity(kk) = 0;
+                end
+            end
+        end
+        function sensitivity = posCoupling(pathobj,varargin)
+            % -- position coupling --
+            %
+            
+            % error if no targetq
+            
+            if nargin<2
+                complist = pathobj.components;
+            else
+                lvargin = length(varargin);
+                complist(lvargin,1) = component;
+                for jj = 1:lvargin
+                    complist(jj) = pathobj.component(varargin{jj});
+                end
+            end
+            
+            numComps = length(complist);
+            
+            sensitivity = zeros(1,numComps);
+            
+            for kk = 1:numComps
+                if strcmp(complist(kk).type,'curved mirror') || strcmp(complist(kk).type,'flat mirror')
+                    %calculate
+                    
+                    fudge = 1e-9;
+                    
+                    qOut = pathobj.qPropagate(complist(kk).z,pathobj.targetq,pathobj.targetz);
+                    qIn = pathobj.qPropagate(complist(kk).z-fudge,pathobj.targetq,pathobj.targetz);
+                    
+                    qIn = qIn.transform([1 fudge ; 0 1]);
+                    
+                    A = (qOut.q/qIn.q).^2;
+                    
+                    zRO = qOut.rayleighRange;
+                    
+                    alpha= (i*.5*(1+real(A))./zRO+.5./zRO .*imag(A));
+                    
+                    sensitivity(kk) = abs(alpha);
+                else
+                    sensitivity(kk) = 0;
                 end
             end
         end
@@ -587,7 +705,7 @@ classdef beamPath < handle
                 plothandle = ploth;
             end
         end
-        function plothandle = plotGouyPhase(pathobj,zdomain,wrapit,varargin)
+        function plothandle = plotGouyPhase(pathobj,zdomain,dontWrap,varargin)
             % -- beamPath.plotBeamWidth --
             % Creates a plot of the accumulate guoy phase in degrees over some z domain, the seed
             % beam is used as the input. Although the seed beam may be defined anywhere
@@ -600,17 +718,17 @@ classdef beamPath < handle
             % function and can be used to change the line style. One could
             % use 'r--' to make the plot appear as a red dashed line.
             %
-            % the second argument is a string, if it is 'wrap' then the Gouy Phase
-            % will plot inside of +-180 degrees, if it is anything else, or omitted, it will
-            % not wrap the plot.
+            % the second argument is a string, if it is 'nowrap' then the Gouy Phase
+            % will not wrap inside of +-180 degrees, if it is anything else, or omitted, it will
+            % be wrapped.
             %
             % If an output argument is used, the function returns the plot handle.
             if nargin<3
-                wrapit = '';
+                dontWrap = '';
             end
             gouyPlot = pathobj.gouyPhase(zdomain);
             
-            if strcmpi(wrapit,'wrap')
+            if strcmpi(dontWrap,'nowrap')
                 gouyPlot = mod(gouyPlot+180,360)-180;
             end
             
