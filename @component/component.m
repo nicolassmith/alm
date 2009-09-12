@@ -246,12 +246,14 @@ classdef component < handle
                 parameterColumn{j+2} = x(5:end-2);
             end            
             output = [topRow;lineBreak;[{obj.label}.',{obj.z}.',{obj.type}.']];
-            output = [output,parameterColumn];
-
+            output = [output,parameterColumn];           %#ok<NASGU>
+            outstring = evalc('disp(output)');
+            outstring = outstring(outstring~='''' & outstring~='[' & outstring~=']');
+            
             disp(' ');
             disp([inputname(1) ' = '])
             disp(' ');
-            disp(output);
+            disp(outstring);
             disp(' ');
         end
     end

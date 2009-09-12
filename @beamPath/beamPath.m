@@ -565,11 +565,13 @@ classdef beamPath < handle
                 end
             end
         end
-        function sensitivity = angleCoupling(pathobj,varargin)
+        function sensitivity = angleSensitivity(pathobj,varargin)
             % -- angle coupling --
             %
             
-            % error if no targetq
+            if isempty(pathobj.targetz) || isempty(pathobj.targetq.q)
+                error('Can''t do sensitivity, no target beam is defined.')
+            end
             
             if nargin<2
                 complist = pathobj.components;
@@ -600,12 +602,13 @@ classdef beamPath < handle
                 end
             end
         end
-        function sensitivity = bounceCoupling(pathobj,varargin)
+        function sensitivity = lateralSensitivity(pathobj,varargin)
             % -- bounce coupling --
             %
-            
-            % error if no targetq
-            
+            if isempty(pathobj.targetz) || isempty(pathobj.targetq.q)
+                error('Can''t do sensitivity, no target beam is defined.')
+            end
+                        
             if nargin<2
                 complist = pathobj.components;
             else
@@ -635,11 +638,15 @@ classdef beamPath < handle
                 end
             end
         end
-        function sensitivity = posCoupling(pathobj,varargin)
+        function sensitivity = positionSensitivity(pathobj,varargin)
             % -- position coupling --
             %
             
             % error if no targetq
+            
+            if isempty(pathobj.targetz) || isempty(pathobj.targetq.q)
+                error('Can''t do sensitivity, no target beam is defined.')
+            end
             
             if nargin<2
                 complist = pathobj.components;
@@ -673,10 +680,78 @@ classdef beamPath < handle
                     alpha= (i*.5*(1+real(A))./zRO+.5./zRO .*imag(A));
                     
                     sensitivity(kk) = abs(alpha);
+                elseif strcmp(complist(kk).type,'lens')
+                    %calculate
+                    
+                    fudge = 1e-9;
+                    
+                    qOut = pathobj.qPropagate(complist(kk).z,pathobj.targetq,pathobj.targetz);
+                    qIn = pathobj.qPropagate(complist(kk).z-fudge,pathobj.targetq,pathobj.targetz);
+                    
+                    qIn = qIn.transform([1 fudge ; 0 1]);
+                    
+                    zRO = qOut.rayleighRange;
+                    
+                    f = complist(kk).parameters.focalLength;
+                    
+                    B = qOut.q/f * ( 1 + qOut.q/qIn.q );
+                    
+                    alpha= (i*.5*(real(B))./zRO+.5./zRO .*imag(B));
+                    
+                    sensitivity(kk) = abs(alpha);
                 else
                     sensitivity(kk) = 0;
                 end
             end
+        end
+        function sensitivitySummary(pathobj,varargin)
+            % -- position coupling --
+            %
+            
+            % error if no targetq
+            
+            if isempty(pathobj.targetz) || isempty(pathobj.targetq.q)
+                error('Can''t do sensitivity, no target beam is defined.')
+            end
+            
+            if nargin<2
+                complist = pathobj.components;
+            else
+                lvargin = length(varargin);
+                complist(lvargin,1) = component;
+                for jj = 1:lvargin
+                    complist(jj) = pathobj.component(varargin{jj});
+                end
+            end
+            
+            labelColumn = {'';...
+                           'Ang. Sensitivity';...
+                           'Lat. Sensitivity';...
+                           'Pos. Sensitivity'};
+                       
+            unitsColumn = {'';...
+                           '(1/rad)';...
+                           '(1/m)';...
+                           '(1/m)'};
+            
+            numComps = length(complist);
+            compColumns = cell(4,numComps);
+            
+            for kk = 1:numComps
+                compColumns{1,kk} = complist(kk).label;
+                compColumns{2,kk} = num2str(pathobj.angleSensitivity(complist(kk).label));
+                compColumns{3,kk} = num2str(pathobj.lateralSensitivity(complist(kk).label));
+                compColumns{4,kk} = num2str(pathobj.positionSensitivity(complist(kk).label));
+            end
+            
+            dispstring = evalc('disp([labelColumn,compColumns,unitsColumn])');
+            dispstring = dispstring(dispstring~='''');
+            
+            disp(' ');
+            disp(['Sensitivity summary for beam path: ' inputname(1)])
+            disp(' ');
+            disp(dispstring);
+            disp(' ');
         end
         % these are for making graphics
         function plothandle = plotBeamWidth(pathobj,zdomain,varargin)
