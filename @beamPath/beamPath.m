@@ -23,6 +23,13 @@ classdef beamPath < handle
     %           It is a vector array of objects in the component class.
     %           Each component has a certain transfer matrix and position,
     %           these properties are stored in the component class.
+    %           The beamPath class stores the array of components in the 
+    %           beamPath.components array. The ordering of the elements in 
+    %           this array is always by increasing z position. This means
+    %           that the array index of components in the component array
+    %           may change if the z positions are changed. The component
+    %           class also has a 'label' property, which allows a component
+    %           to be indexed unambiguously. See beamPath.component below.
     %
     % The beamPath class also has methods which facilitate in calculating 
     %     beam propagation and laying out your beam path.
@@ -184,6 +191,15 @@ classdef beamPath < handle
         end
         % overloaded builtin methods
         function display(pathobj)
+            if length(pathobj)>1
+                sizeobj = size(pathobj);
+                disp(' ')
+                disp(['  ' num2str(sizeobj(1)) 'x' num2str(sizeobj(2)) ' <a href="matlab:help beamPath">beamPath</a> object: ' inputname(1)])
+                disp(' ')
+                return
+            end
+            
+            disp(' ')
             disp(['  <a href="matlab:help beamPath">beamPath</a> object: ' inputname(1)])
             disp(' ')
             disp(['  Contains ' num2str(length(pathobj.components)) ' components.'])
@@ -224,6 +240,7 @@ classdef beamPath < handle
                 disp(' ')
                 disp(['  Mode overlap with target beam: ' num2str(pathobj.targetOverlap) '.'])
             end
+            disp(' ')
         end
         % these methods allow manipulation of the components in a beam path
         function addComponent(pathobj,newComponent) %idea - add component by name?
@@ -566,17 +583,44 @@ classdef beamPath < handle
             end
         end
         function sensitivity = angleSensitivity(pathobj,varargin)
-            % -- angle coupling --
+            % -- angle sensitivity --
             %
+            
+            arraySize = size(pathobj);
+            
+            if numel(pathobj)>1  % deals with arrays of beampaths
+                sensitivity = zeros(arraySize);
+                for jj = 1:arraySize(1)
+                    for kk = 1:arraySize(2)
+                        sensitivity(jj,kk) = pathobj(jj,kk).angleSensitivity('-c');
+                    end
+                end
+                return
+            end
             
             if isempty(pathobj.targetz) || isempty(pathobj.targetq.q)
                 error('Can''t do sensitivity, no target beam is defined.')
             end
             
-            if nargin<2
+            lvargin = length(varargin);
+            
+            flagIndex = find(strncmp(varargin,'-',1),2); % find the option flag
+            if length(flagIndex)>1
+                error('Please only use the option flag "-" once in arguments.')
+            end
+            
+            combined = 0;
+            if flagIndex
+                if any(varargin{flagIndex}=='c') || any(varargin{flagIndex}=='C') % identify combined flag
+                    combined = 1; 
+                end
+                varargin = {varargin{1:end~=flagIndex}}; % remove options from the arguments
+                lvargin = length(varargin);
+            end
+            
+            if lvargin == 0
                 complist = pathobj.components;
             else
-                lvargin = length(varargin);
                 complist(lvargin,1) = component;
                 for jj = 1:lvargin
                     complist(jj) = pathobj.component(varargin{jj});
@@ -601,15 +645,48 @@ classdef beamPath < handle
                     sensitivity(kk) = 0;
                 end
             end
+            
+            if combined
+                sensitivity = sqrt(sum(sensitivity.^2));
+            end
         end
         function sensitivity = lateralSensitivity(pathobj,varargin)
-            % -- bounce coupling --
+            % -- lateral sensitivity --
             %
+            
+            arraySize = size(pathobj);
+            
+            if numel(pathobj)>1 % deals with arrays of beampaths
+                sensitivity = zeros(arraySize);
+                for jj = 1:arraySize(1)
+                    for kk = 1:arraySize(2)
+                        sensitivity(jj,kk) = pathobj(jj,kk).lateralSensitivity('-c');
+                    end
+                end
+                return
+            end
+            
             if isempty(pathobj.targetz) || isempty(pathobj.targetq.q)
                 error('Can''t do sensitivity, no target beam is defined.')
             end
-                        
-            if nargin<2
+            
+            lvargin = length(varargin);
+            
+            flagIndex = find(strncmp(varargin,'-',1),2); % find the option flag
+            if length(flagIndex)>1
+                error('Please only use the option flag "-" once in arguments.')
+            end
+            
+            combined = 0;
+            if flagIndex
+                if any(varargin{flagIndex}=='c') || any(varargin{flagIndex}=='C') % identify combined flag
+                    combined = 1; 
+                end
+                varargin = {varargin{1:end~=flagIndex}}; % remove options from the arguments
+                lvargin = length(varargin);
+            end
+            
+            if lvargin == 0
                 complist = pathobj.components;
             else
                 lvargin = length(varargin);
@@ -633,22 +710,61 @@ classdef beamPath < handle
                     f = complist(kk).parameters.ROC / 2;
                     
                     sensitivity(kk) = sqrt( (S(1,2)/w0)^2 + (S(2,2)/divAngle)^2 )/abs(f);
+                elseif strcmp(complist(kk).type,'lens')
+                    %calculate
+                    S = pathobj.getTransferMatrix(complist(kk).z,pathobj.targetz);
+                    
+                    w0 = pathobj.targetq.waistSize;
+                    divAngle = pathobj.targetq.divergenceAngle;
+                    f = complist(kk).parameters.focalLength;
+                    
+                    sensitivity(kk) = sqrt( (S(1,2)/w0)^2 + (S(2,2)/divAngle)^2 )/abs(f);
                 else
                     sensitivity(kk) = 0;
                 end
             end
+            
+            if combined
+                sensitivity = sqrt(sum(sensitivity.^2));
+            end
         end
         function sensitivity = positionSensitivity(pathobj,varargin)
-            % -- position coupling --
+            % -- position sensitivity --
             %
             
-            % error if no targetq
+            arraySize = size(pathobj);
+            
+            if numel(pathobj)>1 % deals with arrays of beampaths
+                sensitivity = zeros(arraySize);
+                for jj = 1:arraySize(1)
+                    for kk = 1:arraySize(2)
+                        sensitivity(jj,kk) = pathobj(jj,kk).positionSensitivity('-c');
+                    end
+                end
+                return
+            end
             
             if isempty(pathobj.targetz) || isempty(pathobj.targetq.q)
                 error('Can''t do sensitivity, no target beam is defined.')
             end
             
-            if nargin<2
+            lvargin = length(varargin);
+            
+            flagIndex = find(strncmp(varargin,'-',1),2); % find the option flag
+            if length(flagIndex)>1
+                error('Please only use the option flag "-" once in arguments.')
+            end
+            
+            combined = 0;
+            if flagIndex
+                if any(varargin{flagIndex}=='c') || any(varargin{flagIndex}=='C') % identify combined flag
+                    combined = 1; 
+                end
+                varargin = {varargin{1:end~=flagIndex}}; % remove options from the arguments
+                lvargin = length(varargin);
+            end
+            
+            if lvargin == 0
                 complist = pathobj.components;
             else
                 lvargin = length(varargin);
@@ -703,6 +819,10 @@ classdef beamPath < handle
                     sensitivity(kk) = 0;
                 end
             end
+            
+            if combined
+                sensitivity = sqrt(sum(sensitivity.^2));
+            end
         end
         function sensitivitySummary(pathobj,varargin)
             % -- position coupling --
@@ -727,12 +847,12 @@ classdef beamPath < handle
             labelColumn = {'';...
                            'Ang. Sensitivity';...
                            'Lat. Sensitivity';...
-                           'Pos. Sensitivity'};
+                           'Pos. Sensitivity'}; %#ok<NASGU>
                        
             unitsColumn = {'';...
                            '(1/rad)';...
                            '(1/m)';...
-                           '(1/m)'};
+                           '(1/m)'}; %#ok<NASGU>
             
             numComps = length(complist);
             compColumns = cell(4,numComps);

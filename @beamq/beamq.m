@@ -1,4 +1,24 @@
 classdef beamq
+    % -- beamq --
+    %
+    %    The beamq class is used for calculating the properties of a 
+    %    gaussian beam. It stores the complex beam q parameter used to 
+    %    chatacterize a gaussian beam. By setting the 'q' and 'lambda' 
+    %    properties of a  beamq object, it can return various properties
+    %    of the beam.
+    %
+    %    Properties:
+    %         beamWidth - the 1/e electric field amplitude radius.
+    %         waistSize - the beam width at the waist of the beam.
+    %         waistZ - the relative distance from the beam waist, this is
+    %             also the real part of the q parameter.
+    %         divergenceAngle - the angle between the propagation axis and
+    %             the diverging radius of the beam in the far field.
+    %         radiusOfCurvature - The radius of curvature of the constant 
+    %             phase front of the beam.
+    %         rayleighRange - The axial length scale of the beam focus,
+    %             this is also the imaginary part of the q parameter.
+    %
     properties
         q;
         lambda = 1064e-9;

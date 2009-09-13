@@ -1,4 +1,23 @@
 classdef component < handle
+    % -- component --
+    %
+    %    The component class is used to represent optical components.
+    %    The properties associated with a component object are: the 
+    %    position (z), the ray transfer matrix, or ABCD matrix (M) and the
+    %    label. Component objects used with the special constructors also
+    %    have a 'parameters' property.
+    %
+    %    Methods:
+    %        component - The component constructor, for making a component
+    %            object. The arguments are (M,z,label)
+    %        <a href="matlab:help component.duplicate">duplicate</a> - creates and identical component object.
+    %        <a href="matlab:help component.lens">lens</a> - creates a lens component.
+    %        <a href="matlab:help component.curvedMirror">curvedMirror</a> - creates a curved mirror object.
+    %        <a href="matlab:help component.flatMirror">flatMirror</a> - creates flat mirror object.
+    %        <a href="matlab:help component.propagator">propagator</a> - creates free space propagator object.
+    %        <a href="matlab:help component.combine">combine</a> - creates a composit component object with a 
+    %            tranfer matrix which is the product of the components in the calling array
+    %     
     properties (SetAccess = private) %only z and label can be changed at the moment
                                      %eventually i need to make it possible for components to have
                                      %a transfer matrix as a function of Z
