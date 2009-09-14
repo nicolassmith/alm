@@ -870,7 +870,7 @@ classdef beamPath < handle
             dispstring = dispstring(dispstring~='''');
             
             disp(' ');
-            disp(['Sensitivity summary for beam path: ' inputname(1)])
+            disp([' Sensitivity summary for beam path: ' inputname(1)])
             disp(' ');
             disp(dispstring);
             disp(' ');
