@@ -134,6 +134,8 @@ classdef beamPath < handle
             pathdup.seedq.q = qVals(1)+i*qVals(2);
             qout = pathdup.qPropagate(zPred);
             
+            widthPred = reshape(widthPred,1,numel(widthPred));
+
             width = [qout.beamWidth];
             
             error = sum((widthPred-width).^2);
@@ -1346,6 +1348,8 @@ classdef beamPath < handle
             if nargin<3
                 error('Not enough input arguments for fitBeamWidth')
             end
+            
+            
             
             qValsStart = [real(pathobj.seedq.q) imag(pathobj.seedq.q)];
             fitqVals = fminsearch(@(qVals)pathobj.beamFitError(qVals,zPred,widthPred),qValsStart);
