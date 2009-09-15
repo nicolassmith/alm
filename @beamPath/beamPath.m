@@ -585,7 +585,7 @@ classdef beamPath < handle
             end
         end
         function sensitivity = angleSensitivity(pathobj,varargin)
-            % -- angle sensitivity --
+            % -- beamPath.angleSensitivity --
             %
             
             arraySize = size(pathobj);
@@ -653,7 +653,7 @@ classdef beamPath < handle
             end
         end
         function sensitivity = lateralSensitivity(pathobj,varargin)
-            % -- lateral sensitivity --
+            % -- beamPath.lateralSensitivity --
             %
             
             arraySize = size(pathobj);
@@ -827,10 +827,8 @@ classdef beamPath < handle
             end
         end
         function sensitivitySummary(pathobj,varargin)
-            % -- position coupling --
+            % -- beamPath.sensitivitySummary --
             %
-            
-            % error if no targetq
             
             if isempty(pathobj.targetz) || isempty(pathobj.targetq.q)
                 error('Can''t do sensitivity, no target beam is defined.')
@@ -867,7 +865,7 @@ classdef beamPath < handle
             end
             
             dispstring = evalc('disp([labelColumn,compColumns,unitsColumn])');
-            dispstring = dispstring(dispstring~='''');
+            dispstring = dispstring(dispstring~=''''); % remove quotes from output
             
             disp(' ');
             disp([' Sensitivity summary for beam path: ' inputname(1)])
@@ -1117,6 +1115,9 @@ classdef beamPath < handle
             % this will attempt to find the optimum modematching for the components in the given range
             % for each component. If a component is not named, it will not be moved. The target beam
             % position can also be optimized.
+            %
+            % options: include the string '-v' (verbose) as one of your input arguments to enable some 
+            %   outputto the command window.
             
             lvargin = length(varargin);
             if lvargin<1  
@@ -1180,8 +1181,38 @@ classdef beamPath < handle
         end
         function [pathList,overlapList] = chooseComponents(pathin,varargin)
             % -- beamPath.chooseComponents --
+            % This function will return an array of beamPath objects which are created 
+            % by selecting components from an array of component objects and optimizing the positions using
+            % the optimizePath method. Use a second output argument and the function will return an array of the mode
+            % overlap calcualted for each path.
             %
-            % syntax: path1.chooseComponents('lens1',lensList,[.5 .75],'lens2',lensList,[1.2 1.3])
+            % The beamPath object which is used to call the function will provide the initial conditions
+            % and should include objects in the desired starting positions. The components in the initial beam path
+            % will not be part of the list that the components will be chosen from. If an empty array is used
+            % instead of a list, the component will not be changed, but the placement will be changed to optimize
+            % the mode overlap. 
+            %
+            % Each component which is being changed should be passed its own component list to choose from.
+            % The algorithm recognizes when a component object is in more than one list and won't try solutions which
+            % use the same component more than once. If the number of times a component is used doesn't matter, one
+            % should make a new component list with the component.duplicate method and pass a duplicate list for each
+            % component being replaced.
+            %
+            % See the example file for more information
+            %
+            % Syntax: path.chooseComponents(componentLabel,componentList,[lower_bound upper_bound],...)
+            %       path is the beampath being optimized, 'componentLabel' is the string label of a component already
+            %       defined in path which will be replaced by components in the 'componentList' array. The bounds
+            %       are numbers which restrict the z coordinate of the component when optimizing.
+            %
+            % example: [pathlist,overlaplist] = path1.chooseComponents('lens1',lensList,[.5 .75],'lens2',lensList,[1.2 1.3])
+            %
+            % options:
+            %   Include the string '-v' for verbose output. Use the option '-t' followed by a number to set 
+            %   a threshold below which solutions will not attempt to be optimized after the initial
+            %   placement of the components. This can be used to reduce the search time significantly when the number
+            %   of combinations are large. To use both options, pass '-vt' as an arugment, followed by the minimum overlap.
+            %
 
             lvargin = length(varargin);
             if lvargin<1
@@ -1329,7 +1360,7 @@ classdef beamPath < handle
             pathList = pathList(ix);
             
             if isempty(overlapList)
-                error('Could not find any solutions, try changing initial conditions.')
+                error('Could not find any solutions, try changing initial conditions or lowering minimum overlap threshold.')
             end
             
             % now sort path list according to overlap
