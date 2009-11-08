@@ -17,8 +17,8 @@ goo = beamPath;
 goo.addComponent(component.lens(1.25,.75,'lens1'));
 goo.addComponent(component.lens(1.75,3.25,'lens2'));
 
-goo.seedWaist(.2e-3,0);
-goo.targetWaist(.4e-3,5);
+goo.seedWaist(.2e-3,0); % define input beam
+goo.targetWaist(.4e-3,5); % define target beam
 
 zdomain = -1:.01:6;
 
