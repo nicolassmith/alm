@@ -546,6 +546,18 @@ classdef beamPath < handle
             % Example:
             % path1.targetOverlap()
             
+            % handle array of beamPaths
+            if numel(pathobj)>1
+                arraySize = size(pathobj);
+                overlapFrac = zeros(arraySize);
+                for jj = 1:arraySize(1)
+                    for kk = 1:arraySize(2)
+                        overlapFrac(jj,kk) = pathobj(jj,kk).targetOverlap;
+                    end
+                end
+                return
+            end
+            
             if isempty(pathobj.targetz) || isempty(pathobj.targetq.q)
                 error('Can''t do mode overlap, no target beam is defined.')
             end
