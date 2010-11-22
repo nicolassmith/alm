@@ -128,10 +128,10 @@ classdef beamPath < handle
             end
             pathobj.components = complist(zindex);
         end
-        function error = beamFitError(pathobj,qVals,zPred,widthPred)
+        function error = beamFitError(pathobj,waistParams,zPred,widthPred,lambda)
             
             pathdup = pathobj.duplicate;
-            pathdup.seedq.q = qVals(1)+i*qVals(2);
+            pathdup.seedq=beamq.beamWaistAndZ(waistParams(1),waistParams(2),lambda);
             qout = pathdup.qPropagate(zPred);
             
             widthPred = reshape(widthPred,1,numel(widthPred));
@@ -1392,13 +1392,18 @@ classdef beamPath < handle
                 error('Not enough input arguments for fitBeamWidth')
             end
             
+            if length(zPred)~=length(widthPred)
+                error('Position and beam width vectors must be same length in fitBeamWidth.')
+            end
             
+            waistParamsStart = [pathobj.seedq.waistSize pathobj.seedq.waistZ];
             
-            qValsStart = [real(pathobj.seedq.q) imag(pathobj.seedq.q)];
-            fitqVals = fminsearch(@(qVals)pathobj.beamFitError(qVals,zPred,widthPred),qValsStart);
+            lambda = pathobj.seedq.lambda;
+            
+            fitWaistParams = fminsearch(@(waistParams)pathobj.beamFitError(waistParams,zPred,widthPred,lambda),waistParamsStart); %
             
             fittedPath = pathobj.duplicate;
-            fittedPath.seedq.q = fitqVals(1) + i*fitqVals(2);
+            fittedPath.seedq = beamq.beamWaistAndZ(fitWaistParams(1),fitWaistParams(2),lambda);
         end
     end % methods
 end % classdef
