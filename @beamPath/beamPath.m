@@ -123,9 +123,9 @@ classdef beamPath < handle
 
             zlist = [complist.z];
             [zsorted,zindex] = sort(zlist);
-            if length(complist) < 1 || all(complist == complist(zindex))
-                return
-            end
+%             if length(complist) < 1 || all(complist == complist(zindex))
+%                 return
+%             end
             pathobj.components = complist(zindex);
         end
         function error = beamFitError(pathobj,waistParams,zPred,widthPred,lambda)
@@ -184,7 +184,7 @@ classdef beamPath < handle
             pathObjOut.seedz = zlink;
         end
         % property access methods
-        function pathobj = set.components(pathobj,comps)
+        function pathobj = set.components(pathobj,comps) %#ok<MCHV2>
             pathobj.components_raw = comps;
         end
         function compArray = get.components(pathobj)
@@ -477,7 +477,7 @@ classdef beamPath < handle
                 dz = zends - zstarts;
 
                 for j = 1:length(dz)
-                    compPath.addComponent(component.propagator(dz(j),zstarts(j)))
+                    compPath.addComponent(component.propagator(dz(j),zstarts(j))) % this is a slow way to do it, needs optimization
                 end
 
                 fullPathComponent = compPath.components.combine();
@@ -807,7 +807,7 @@ classdef beamPath < handle
                     
                     zRO = qOut.rayleighRange;
                     
-                    alpha= (i*.5*(1+real(A))./zRO+.5./zRO .*imag(A));
+                    alpha= (1i*.5*(1+real(A))./zRO+.5./zRO .*imag(A));
                     
                     sensitivity(kk) = abs(alpha);
                 elseif strcmp(complist(kk).type,'lens')
@@ -826,7 +826,7 @@ classdef beamPath < handle
                     
                     B = qOut.q/f * ( 1 + qOut.q/qIn.q );
                     
-                    alpha= (i*.5*(real(B))./zRO+.5./zRO .*imag(B));
+                    alpha= (1i*.5*(real(B))./zRO+.5./zRO .*imag(B));
                     
                     sensitivity(kk) = abs(alpha);
                 else
@@ -1280,7 +1280,7 @@ classdef beamPath < handle
             %      also make sure that all the named components exist
             argCell = {};
             for jj = 1:numlists
-                argCell = {argCell{:},compLabels{jj},compRanges{jj}};
+                argCell = [argCell,{compLabels{jj},compRanges{jj}}]; %#ok<AGROW>
                 if isempty(compLists{jj})
                     compLists{jj} = pathin.component(compLabels{jj}).duplicate;
                 else
@@ -1290,7 +1290,7 @@ classdef beamPath < handle
             
             % add target to argument cell if it was named
             if indexTarget
-                argCell = {argCell{:},'target',targetRange};
+                argCell = [argCell,{'target',targetRange}];
             end
             
             % duplicate the user's path so we don't screw up the original
@@ -1400,7 +1400,7 @@ classdef beamPath < handle
             
             lambda = pathobj.seedq.lambda;
             
-            fitWaistParams = fminsearch(@(waistParams)pathobj.beamFitError(waistParams,zPred,widthPred,lambda),waistParamsStart); %
+            fitWaistParams = fminsearch(@(waistParams)pathobj.beamFitError(waistParams,zPred,widthPred,lambda),waistParamsStart);
             
             fittedPath = pathobj.duplicate;
             fittedPath.seedq = beamq.beamWaistAndZ(fitWaistParams(1),fitWaistParams(2),lambda);
