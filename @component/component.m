@@ -262,7 +262,7 @@ classdef component < handle
             for j = 1:length(obj)
                 x = evalc('disp(obj(j).parameters)');
                 
-                parameterColumn{j+2} = x(5:end-2);
+                parameterColumn{j+2} = x(5:min([end-2,23]));
             end            
             output = [topRow;lineBreak;[{obj.label}.',{obj.z}.',{obj.type}.']];
             output = [output,parameterColumn];           %#ok<NASGU>
