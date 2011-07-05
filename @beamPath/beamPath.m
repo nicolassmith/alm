@@ -1054,7 +1054,7 @@ classdef beamPath < handle
             end
 
         end
-        function plotSummary(pathobj,zdomain)
+        function plotSummary(pathobj,zdomain,nobeamsflag)
             % -- beamPath.plotSummary --
             % Plots a summary of the beampath. This is a two panel plot with beam 
             % width on the top and gouy phase on the bottom.
@@ -1065,12 +1065,24 @@ classdef beamPath < handle
             % if zdomain is omitted, it chooses a domain based on what is
             % in the beam path
             
-            if nargin<2
+            if nargin<3
+                nobeamsflag = 0;
+            end
+            
+            if ischar(nobeamsflag)
+                if strcmp(nobeamsflag,'nobeams')
+                    nobeamsflag = 1;
+                else
+                    nobeamsflag = 0;
+                end
+            end
+            
+            if nargin<2 || isempty(zdomain)
                 zlist = [pathobj.components.z];
-                if ~isempty(pathobj.seedq.q)
+                if ~isempty(pathobj.seedq.q) && ~nobeamsflag
                     zlist = [zlist,pathobj.seedz];
                 end
-                if ~isempty(pathobj.targetq.q)
+                if ~isempty(pathobj.targetq.q) && ~nobeamsflag
                     zlist = [zlist,pathobj.targetz];
                 end
                 
@@ -1098,7 +1110,9 @@ classdef beamPath < handle
             axis tight
             grid on
             pathobj.plotComponents(zdomain,'b*');
-            pathobj.plotBeams(zdomain);
+            if ~nobeamsflag
+                pathobj.plotBeams(zdomain);
+            end
             hold off
             
             ylabel('Beam Width (m)')
