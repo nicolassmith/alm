@@ -885,6 +885,76 @@ classdef beamPath < handle
             disp(dispstring);
             disp(' ');
         end
+        function [zList,qList] = getWaists(pathobj,zdomain)
+            % 2 outputs: a list of positions of waists, and beamq objects
+            % of the waists
+            
+            % if zdomain isn't defined, make it -inf..inf
+            if nargin<2
+                zdomain = [-inf inf];
+            end
+            
+            % first find all the waists after the first component
+            
+            % find the z positions off all comps in domain, add the end of
+            % zdomain to the list, loop will go through the number of
+            % comps, not including the end of zdomain
+            
+            zmin = min(zdomain);
+            zmax = max(zdomain);
+            
+            zComponents = [pathobj.components.z];
+            zComponents = zComponents(zmin < zComponents & zComponents <=zmax);
+            
+            nLoop = length(zComponents);
+            
+            zComponents = [zComponents,zmax];
+            
+            zWaists = [];
+            % loop through z values
+            for kk = 1:nLoop
+                
+                % find the waist position relative to the current component
+                
+                beamAfterComponent = pathobj.qPropagate(zComponents(kk));
+                
+                waistPos = zComponents(kk) - beamAfterComponent.waistZ;
+                
+                % make sure it's between this component and the next, if yes,
+                % keep track of that one. (> current, <= next)
+                
+                if waistPos > zComponents(kk) && waistPos <= zComponents(kk+1)
+                    zWaists = [zWaists;waistPos]; %#ok<AGROW>
+                end
+            end
+            
+            % finally as a special case, get the waist before the first
+            % component, make sure it's between the beginning of the
+            % zdomain and the z of first component.
+            leftStep = 1;
+
+            if length(zComponents)<2 && zComponents(1)==Inf
+                zComponents(1)=leftStep;
+            end
+            
+            beamBeforeFirstComponent = pathobj.qPropagate(zComponents(1)-leftStep);
+            
+            waistPos = zComponents(1) - leftStep - beamBeforeFirstComponent.waistZ;
+            
+            if waistPos > zmin && waistPos <= zComponents(1)
+                zWaists = [waistPos;zWaists];
+            end
+            
+            zList = zWaists;
+            
+            if nargout > 1
+                %qList = [];
+                for jj = 1:length(zList)
+                    qList(jj) = pathobj.qPropagate(zList(jj)); %#ok<AGROW>
+                end
+            end
+            
+        end
         % these are for making graphics
         function plothandle = plotBeamWidth(pathobj,zdomain,varargin)
             % -- beamPath.plotBeamWidth --
@@ -1054,7 +1124,34 @@ classdef beamPath < handle
             end
 
         end
-        function plotSummary(pathobj,zdomain,nobeamsflag)
+        function plotWaists(pathobj,zdomain,colorString)
+            arrowLength = .02;
+            
+            if nargin < 2
+                zdomain = [-Inf Inf];
+            end
+            if nargin < 3
+                colorString = 'k';
+            end
+            
+            [waistZs,waistQs]=pathobj.getWaists(zdomain);
+            
+            for jj = 1:length(waistZs)
+                waistString = {['w = ' num2str(round(waistQs(jj).beamWidth/1e-6)) '\mum']};
+                [waistPlotx waistPloty] = dsxy2figxy(gca,waistZs(jj),waistQs(jj).beamWidth);
+                [waistPlotx waistPlotyneg] = dsxy2figxy(gca,waistZs(jj),-waistQs(jj).beamWidth);
+                try
+                annotation('textarrow',[waistPlotx waistPlotx],[waistPloty+arrowLength waistPloty],...
+                    'string',waistString,'FontSize',8,'Color',colorString);
+                
+                annotation('textarrow',[waistPlotx waistPlotx],[waistPlotyneg-arrowLength waistPlotyneg],...
+                    'string','','FontSize',8,'Color',colorString);
+                catch
+                    error('You may be trying to plot a waist outside of the plot domain')
+                end
+            end
+        end
+        function plotSummary(pathobj,zdomain,varargin)
             % -- beamPath.plotSummary --
             % Plots a summary of the beampath. This is a two panel plot with beam 
             % width on the top and gouy phase on the bottom.
@@ -1111,7 +1208,7 @@ classdef beamPath < handle
             grid on
             pathobj.plotComponents(zdomain,'b*');
             if ~nobeamsflag
-                pathobj.plotBeams(zdomain);
+                pathobj.plotWaists(zdomain);
             end
             hold off
             
@@ -1128,6 +1225,9 @@ classdef beamPath < handle
             
             ylabel('Gouy Phase (degrees)')
             xlabel('axial dimension, z (m)')
+            
+            %return to top plot
+            subplot(2,1,1)
         end
         % used for finding overlap optimization
         function [optimizedPathobj,optimumOverlap] = optimizePath(pathobj,varargin)
