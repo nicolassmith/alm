@@ -7,6 +7,13 @@ classdef beamq
     %    properties of a  beamq object, it can return various properties
     %    of the beam.
     %
+    %    Constructor Methods:
+    %         beamq(q,lambda) - returns a beamq object with the defined q
+    %            value for wavelength lambda (in meters).
+    %         beamq.beamWaistAndZ(w0,Z,lambda) - returns a beamq object
+    %            with a waist of w0 (in meters) at position Z (in meters)
+    %            with wavelength lambda (in meters).
+    %
     %    Properties:
     %         beamWidth - the 1/e electric field amplitude radius.
     %         waistSize - the beam width at the waist of the beam.
