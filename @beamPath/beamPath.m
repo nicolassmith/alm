@@ -1027,7 +1027,7 @@ classdef beamPath < handle
             end
 
             if ~isempty(pathobj.seedq.q) && min(zdomain) < pathobj.seedz && pathobj.seedz <= max(zdomain)
-                seedString = {'Seed Beam;';['\omega = ' num2str(pathobj.seedq.beamWidth/1e-6) '\mum'];...
+                seedString = {'Seed Beam;';['w = ' num2str(pathobj.seedq.beamWidth/1e-6) '\mum'];...
                     ['ROC = ' num2str(pathobj.seedq.radiusOfCurvature) 'm']};
                 if pathobj.seedq.radiusOfCurvature == Inf
                     seedString{3} = 'ROC = \infty';
@@ -1038,7 +1038,7 @@ classdef beamPath < handle
             end
 
             if ~isempty(pathobj.targetq.q) && min(zdomain) < pathobj.targetz && pathobj.targetz <= max(zdomain)
-                targetString = {'Target Beam;';['\omega = ' num2str(pathobj.targetq.beamWidth/1e-6) '\mum'];...
+                targetString = {'Target Beam;';['w = ' num2str(pathobj.targetq.beamWidth/1e-6) '\mum'];...
                     ['ROC = ' num2str(pathobj.targetq.radiusOfCurvature) 'm']};
                 if pathobj.targetq.radiusOfCurvature == Inf
                     targetString{3} = 'ROC = \infty';
