@@ -1152,6 +1152,7 @@ classdef beamPath < handle
             
             % check for options
             verbose = 0;
+            relative = 0;
             
             flagIndex = find(strncmp(varargin,'-',1),2); % find the option flag
             if length(flagIndex)>1
@@ -1162,6 +1163,9 @@ classdef beamPath < handle
                 if any(varargin{flagIndex}=='v') || any(varargin{flagIndex}=='V')
                     verbose = 1; % identify verbose flag
                 end
+                if any(varargin{flagIndex}=='r') || any(varargin{flagIndex}=='R')
+                    relative = 1; % identify verbose flag
+                end
                 varargin = {varargin{1:end~=flagIndex}}; % remove options from the arguments
                 lvargin = length(varargin);
             end
@@ -1171,7 +1175,7 @@ classdef beamPath < handle
             end
             % this block sets the initial values of the optimization to the current component locations,
             % it also sets the upper and lower bounds equal to the current location, if the component is not 
-            % named in the input arguments, he is constrained to his initial point. (The fitting algorithm 
+            % named in the input arguments, he is constrained to his initial point. (The optimization algorithm 
             % treats this case in a smart way).
             z0 = [pathobj.components.z,pathobj.targetz];
             UB = z0;
@@ -1180,14 +1184,21 @@ classdef beamPath < handle
             % this parses the arguments
             argNames = {varargin{1:2:lvargin}};
             for j = 1:length(argNames)
+                originShift = 0;
                 if strcmpi('target',argNames(j))
-                    UB(end) = varargin{2*j}(2);
-                    LB(end) = varargin{2*j}(1);
+                    if relative
+                        originShift = z0(end);
+                    end
+                    UB(end) = originShift + varargin{2*j}(2);
+                    LB(end) = originShift + varargin{2*j}(1);
                     continue
                 end
                 namedIndex=pathobj.findComponentIndex(argNames{j});
-                UB(namedIndex) = varargin{2*j}(2);
-                LB(namedIndex) = varargin{2*j}(1);
+                if relative
+                    originShift = z0(namedIndex);
+                end
+                UB(namedIndex) = originShift + varargin{2*j}(2);
+                LB(namedIndex) = originShift + varargin{2*j}(1);
             end
             
             % call fminsearchbnd
@@ -1248,6 +1259,7 @@ classdef beamPath < handle
             % check for options
             verbose = 0;
             minThresh = 0;
+            relative = 0;
             
             flagIndex = find(strncmp(varargin,'-',1),2); % find the option flag
             if length(flagIndex)>1
@@ -1257,6 +1269,9 @@ classdef beamPath < handle
             if flagIndex
                 if any(varargin{flagIndex}=='v') || any(varargin{flagIndex}=='V') % identify verbose flag
                     verbose = 1; 
+                end
+                if any(varargin{flagIndex}=='r') || any(varargin{flagIndex}=='R') % identify verbose flag
+                    relative = 1; 
                 end
                 if any(varargin{flagIndex}=='t') || any(varargin{flagIndex}=='T') % identify threshold flag
                     minThresh = varargin{flagIndex+1};
@@ -1305,6 +1320,11 @@ classdef beamPath < handle
             % add target to argument cell if it was named
             if indexTarget
                 argCell = [argCell,{'target',targetRange}];
+            end
+            
+            % pass relative flag if used
+            if relative
+                argCell = [argCell,{'-r'}];
             end
             
             % duplicate the user's path so we don't screw up the original
