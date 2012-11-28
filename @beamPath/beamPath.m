@@ -948,9 +948,12 @@ classdef beamPath < handle
             zList = zWaists;
             
             if nargout > 1
-                %qList = [];
+                %qList = []; % can't do this because we want to fill with objects
                 for jj = 1:length(zList)
                     qList(jj) = pathobj.qPropagate(zList(jj)); %#ok<AGROW>
+                end
+                if isempty(zList)
+                    qList = [];
                 end
             end
             
