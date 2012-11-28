@@ -1137,7 +1137,7 @@ classdef beamPath < handle
             [waistZs,waistQs]=pathobj.getWaists(zdomain);
             
             for jj = 1:length(waistZs)
-                waistString = {['w = ' num2str(round(waistQs(jj).beamWidth/1e-6)) '\mum']};
+                waistString = {['w_0 = ' num2str(round(waistQs(jj).beamWidth/1e-6)) '\mum']};
                 [waistPlotx waistPloty] = dsxy2figxy(gca,waistZs(jj),waistQs(jj).beamWidth);
                 [waistPlotx waistPlotyneg] = dsxy2figxy(gca,waistZs(jj),-waistQs(jj).beamWidth);
                 try
