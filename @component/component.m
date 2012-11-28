@@ -12,6 +12,7 @@ classdef component < handle
     %            object. The arguments are (M,z,label)
     %        <a href="matlab:help component.duplicate">duplicate</a> - creates and identical component object.
     %        <a href="matlab:help component.lens">lens</a> - creates a lens component.
+    %        <a href="matlab:help component.dielectric">dielectric</a> - creates a dielectric (thick lens) component.
     %        <a href="matlab:help component.curvedMirror">curvedMirror</a> - creates a curved mirror object.
     %        <a href="matlab:help component.flatMirror">flatMirror</a> - creates flat mirror object.
     %        <a href="matlab:help component.propagator">propagator</a> - creates free space propagator object.
@@ -166,6 +167,25 @@ classdef component < handle
             M = [ 1, 0; 0, 1];
             objout = component(M,Z);
             objout.type='flat mirror';
+            if nargin > 1
+                objout.label = label;
+            end
+        end
+        function objout = dielectric(R1, R2, thickness, n, Z, label)
+            % -- component.dielectric --
+            % Create a dielectric component object.
+            % Example:
+            % mylens = component.dielectric(R1, R2, th, n, Z, label);
+            % This creates a dielectric (thick lens) component at position
+            % z. label is a string which is used to identify the component.
+            if nargin < 1
+                Z = 0;
+            end
+            dist = @(x) [ 1, x; 0, 1];
+            refract = @(R,n1,n2) [1 0 ; (n1-n2)/(R*n2) n1/n2];
+            M = refract(R2, n, 1)*dist(thickness)*refract(R1,1,n);
+            objout = component(M,Z);
+            objout.type='dielectric';
             if nargin > 1
                 objout.label = label;
             end
