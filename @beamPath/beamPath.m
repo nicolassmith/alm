@@ -54,7 +54,11 @@ classdef beamPath < handle
     %  - These methods are for calculating beam propagation in a beam path:
     %     <a href="matlab:help beamPath.seedWaist">seedWaist</a> - defines the seed beam as a waist of a given size at a given
     %         location.
+    %     <a href="matlab:help beamPath.seedWaistR">seedWaistR</a> - defines the seed beam as a waist of a given size and radius at a given
+    %         location.
     %     <a href="matlab:help beamPath.targetWaist">targetWaist</a> - defines the target beam as a waist of a given size at a given
+    %         location.
+    %     <a href="matlab:help beamPath.targetWaistR">targetWaistR</a> - defines the target beam as a waist of a given size and radius at a given
     %         location.
     %     <a href="matlab:help beamPath.qPropagate">qPropagate</a> - returns a beamq object at a desired position given an 
     %         input beam, usually the seed beam.
@@ -384,6 +388,22 @@ classdef beamPath < handle
             pathobj.seedz = waistPos;
             
         end
+        function seedWaistR(pathobj,waistSize, waistR, waistPos, lambda)
+            % -- beamPath.seedWaistR --
+            % Sets the seed beam of the beam path with a waist and radius at the position.
+            % Example:
+            % path1.seedWaistR(w0,R0,position,lambda)
+            % This will set the seed beam to be a beam waist w0  and radius of curvature R0
+            % at z = position. The wavelength is set by lambda, if omitted,
+            % the default value is 1064nm.
+            if nargin<5
+                lambda = 1064e-9;
+            end
+            
+            pathobj.seedq = beamq.beamWaistAndR(waistSize,waistR,lambda);
+            pathobj.seedz = waistPos;
+            
+        end
         function targetWaist(pathobj,waistSize,waistPos,lambda)
             % -- beamPath.targetWaist --
             % Sets the target beam of the beam path to a waist of given size and position.
@@ -397,6 +417,21 @@ classdef beamPath < handle
             end
             
             pathobj.targetq = beamq.beamWaistAndZ(waistSize,0,lambda);
+            pathobj.targetz = waistPos;
+        end
+        function targetWaistR(pathobj,waistSize,waistR, waistPos,lambda)
+            % -- beamPath.targetWaistR --
+            % Sets the target beam of the beam path to a waist of given size and position.
+            % Example:
+            % path1.targetWaist(w0,R0,position,lambda)
+            % This will set the target beam to be a waist at z = position
+            % with beam waist size = w0 and radius R0. The wavelength is set by lambda, if omitted,
+            % the default value is 1064nm.
+            if nargin<5
+                lambda = 1064e-9;
+            end
+            
+            pathobj.targetq = beamq.beamWaistAndR(waistSize,waistR,lambda);
             pathobj.targetz = waistPos;
         end
         function qout = qPropagate(pathobj,zdomain,qin,zqin)
