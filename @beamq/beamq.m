@@ -8,11 +8,18 @@ classdef beamq
     %    of the beam.
     %
     %    Constructor Methods:
+    %         Note: The default value of lambda is 1064nm.
     %         beamq(q,lambda) - returns a beamq object with the defined q
     %            value for wavelength lambda (in meters).
     %         beamq.beamWaistAndZ(w0,Z,lambda) - returns a beamq object
     %            with a waist of w0 (in meters) at position Z (in meters)
     %            with wavelength lambda (in meters).
+    %         beamq.beamWaistAndR(w0,R,lambda) - returns a beamq object
+    %            with a waist of w0 (in meters) and a radius of R 
+    %            (in meters) at Z=0 with wavelength lambda (in meters). 
+    %         beamq.beamWidthAndR(w,R,lambda) - returns a beamq object
+    %            with a beam width of w (in meters) at Z=0 and a radius of 
+    %            R (in meters) Z=0 with wavelength lambda (in meters).
     %
     %    Properties:
     %         beamWidth - the 1/e electric field amplitude radius.
@@ -51,6 +58,29 @@ classdef beamq
             qobjout = beamq(q);
             qobjout.lambda = lambda;
         end
+        function qobjout = beamWaistAndR(w0,R,lambda)
+            if nargin<3
+                lambda = 1064e-9;
+            end
+            
+            ZR = pi*w0^2/lambda;
+            q = (1/R - i/ZR)^-1;
+
+            qobjout = beamq(q);
+            qobjout.lambda = lambda;
+        end
+        function qobjout = beamWidthAndR(w, R, lambda)
+            if nargin<3
+                lambda = 1064e-9;
+            end
+            Z = R/(1+(R*lambda/pi/w^2)^2);
+            ZR = sqrt(Z*(R-Z));
+            q = Z + 1i*ZR;
+            
+            qobjout = beamq(q);
+            qobjout.lambda = lambda;
+        end
+        
         function qvalout = transformValue(qvalin,M)
             qvalout=(M(1,1).*qvalin+M(1,2))./(M(2,1).*qvalin+M(2,2));     
         end
