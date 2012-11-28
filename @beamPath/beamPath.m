@@ -1333,10 +1333,13 @@ classdef beamPath < handle
             % (where oldPath is an existing beamPath object with at least the components 'lens1' and 'lens3'
             % this will attempt to find the optimum modematching for the components in the given range
             % for each component. If a component is not named, it will not be moved. The target beam
-            % position can also be optimized.
+            % position can also be optimized. The numbers represent the valid range of positions that can 
+            % be searched for that object. (Eg. 'lens1' is allowed to be placed between z=-1.5 and z=-1)
             %
             % options: include the string '-v' (verbose) as one of your input arguments to enable some 
-            %   outputto the command window.
+            %   output to the command window. The option '-r' will make the placement restriction arguments
+            %   relative to the current component position. If you want to allow 'lens1' to move plus or minus
+            %   10 centimeters, the arguments would go ...'lens1',[-0.1,0.1]... Combine both options by using '-vr'.
             
             lvargin = length(varargin);
             if lvargin<1  
@@ -1438,11 +1441,14 @@ classdef beamPath < handle
             % example: [pathlist,overlaplist] = path1.chooseComponents('lens1',lensList,[.5 .75],'lens2',lensList,[1.2 1.3])
             %
             % options:
-            %   Include the string '-v' for verbose output. Use the option '-t' followed by a number to set 
-            %   a threshold below which solutions will not attempt to be optimized after the initial
-            %   placement of the components. This can be used to reduce the search time significantly when the number
-            %   of combinations are large. To use both options, pass '-vt' as an arugment, followed by the minimum overlap.
+            %   '-v' Include the string '-v' for verbose output. 
+            %   '-t' Use the option '-t' followed by a number as the next argument to set 
+            %          a threshold below which solutions will not attempt to be optimized after the initial
+            %          placement of the components. This can be used to reduce the search time significantly when the number
+            %          of combinations is large. 
+            %   '-r' will make the upper and lower Z bounds of components act relative to the current z position.
             %
+            %    combine options by doing '-vr' or '-vrt' etc. If using 't', the following argument is the threshold.
 
             lvargin = length(varargin);
             if lvargin<1
