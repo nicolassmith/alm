@@ -1008,7 +1008,7 @@ classdef beamPath < handle
             end
             gouyPlot = pathobj.gouyPhase(zdomain);
             
-            if strcmpi(dontWrap,'nowrap')
+            if ~strcmpi(dontWrap,'nowrap')
                 gouyPlot = mod(gouyPlot+180,360)-180;
             end
             
