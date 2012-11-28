@@ -1165,24 +1165,60 @@ classdef beamPath < handle
             % if zdomain is omitted, it chooses a domain based on what is
             % in the beam path
             
+            % set plot defaults
             if nargin<3
-                nobeamsflag = 0;
+                plotComponents = 1;
+                plotBeamWidth = 1;
+                plotBeams = 0;
+                plotWaists = 1;
+                plotGouyPhase = 1;
+            else % they are choosing, set all to false
+                plotComponents = 0;
+                plotBeamWidth = 0;
+                plotBeams = 0;
+                plotWaists = 0;
+                plotGouyPhase = 0;
             end
             
-            if ischar(nobeamsflag)
-                if strcmp(nobeamsflag,'nobeams')
-                    nobeamsflag = 1;
-                else
-                    nobeamsflag = 0;
+            % parse plot options
+            for kk=1:length(varargin)
+                switch lower(varargin{kk})
+                    case 'components'
+                        plotComponents=1;
+                    case 'beamwidth'
+                        plotBeamWidth=1;
+                    case 'beams'
+                        plotBeams=1;
+                    case 'waists'
+                        plotWaists=1;
+                    case 'gouyphase'
+                        plotGouyPhase=1;
+                    case 'nobeams'
+                        warning('nobeams is depreciated.');
+                        plotComponents = 1;
+                        plotBeamWidth = 1;
+                        plotGouyPhase = 1;
+                    otherwise
+                        error(['I don''t understand how to plot ' varargin{kk}]);
                 end
+            end
+            
+            if plotBeamWidth && plotGouyPhase
+                doSubPlots = 1;
+            else
+                doSubPlots = 0;
+            end
+            
+            if ~plotBeamWidth && ~plotGouyPhase
+                error('You must plot either the Beam Width or the Gouy Phase')
             end
             
             if nargin<2 || isempty(zdomain)
                 zlist = [pathobj.components.z];
-                if ~isempty(pathobj.seedq.q) && ~nobeamsflag
+                if ~isempty(pathobj.seedq.q) && plotBeams
                     zlist = [zlist,pathobj.seedz];
                 end
-                if ~isempty(pathobj.targetq.q) && ~nobeamsflag
+                if ~isempty(pathobj.targetq.q) && plotBeams
                     zlist = [zlist,pathobj.targetz];
                 end
                 
@@ -1204,33 +1240,52 @@ classdef beamPath < handle
             end
             
             clf
-            subplot(2,1,1)
-            hold on
-            pathobj.plotBeamWidth(zdomain,'r');
-            axis tight
-            grid on
-            pathobj.plotComponents(zdomain,'b*');
-            if ~nobeamsflag
-                pathobj.plotWaists(zdomain);
-            end
-            hold off
             
-            ylabel('Beam Width (m)')
+            if doSubPlots
+                subplot(2,1,1)
+            end
+            if plotBeamWidth
+                hold on
+                pathobj.plotBeamWidth(zdomain,'r');
+                axis tight
+                grid on
+                if plotComponents
+                    pathobj.plotComponents(zdomain,'b*');
+                end
+                if plotWaists
+                    pathobj.plotWaists(zdomain);
+                end
+                if plotBeams
+                    pathobj.plotBeams(zdomain);
+                end
+                hold off
+                
+                ylabel('Beam Width (m)')
+            end
             title(['Beam Path Summary: ' inputname(1)])
             
-            subplot(2,1,2)
-            hold on
-            pathobj.plotGouyPhase(zdomain,'wrap','r');
-            axis tight
-            grid on
-            pathobj.plotComponents(zdomain,'b*');
-            hold off
-            
-            ylabel('Gouy Phase (degrees)')
+            if doSubPlots
+                subplot(2,1,2)
+            end
+            if plotGouyPhase
+                hold on
+                pathobj.plotGouyPhase(zdomain,'wrap','r');
+                axis tight
+                grid on
+                if plotComponents
+                    pathobj.plotComponents(zdomain,'b*');
+                end
+                hold off
+                
+                ylabel('Gouy Phase (degrees)')
+                
+            end
             xlabel('axial dimension, z (m)')
             
             %return to top plot
-            subplot(2,1,1)
+            if doSubPlots
+                subplot(2,1,1)
+            end
         end
         % used for finding overlap optimization
         function [optimizedPathobj,optimumOverlap] = optimizePath(pathobj,varargin)
