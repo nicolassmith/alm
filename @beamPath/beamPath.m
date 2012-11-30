@@ -663,8 +663,8 @@ classdef beamPath < handle
             B=m(1,2);
             C=m(2,1);
             D=m(2,2);
-            if (A_D)^2 + 4*B*C <0
-                qout=( (A-D) + sqrt((A-D)^2 +4*B*C) ) /2 /C;
+            if (A-D)^2 + 4*B*C <0
+                qout=conj( (A-D) + sqrt((A-D)^2 +4*B*C) ) /2 /C;
             else
                 error('No stable eigenmode inside this resonator.');
             end
