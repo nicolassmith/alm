@@ -70,6 +70,15 @@ classdef beamPath < handle
     %  - These methods are for analyzing properties of a beam path:
     %     <a href="matlab:help beamPath.gouySeperation">gouySeperation</a> - calculates the accumulated gouy phase between two
     %         components in the beam path.
+    %     <a href="matlab:help beamPath.gouySeperation">gouySeperation</a> - calculates the accumulated gouy phase between two
+    %     <a href="matlab:help beamPath.eigenMode">eigenMode</a> - calculates the eigenmode of a part of the beampath.
+    %     <a href="matlab:help beamPath.angleSensitivity">angleSensitivity</a> - calculates the sensitivity of components to misalignments.
+    %     <a href="matlab:help beamPath.lateralSensitivity">lateralSensitivity</a> - calculates the sensitivity of components to lateral motion.
+    %     <a href="matlab:help beamPath.positionSensitivity">positionSensitivity</a> - calculates the sensitivity of components to axial motion 
+    %         (motion along the beam axis).
+    %     <a href="matlab:help beamPath.sensitivitySummary">sensitivitySummary</a> - displays a summary of the sensitivity of components to 
+    %         angle, lateral position, and axial position motion.
+    %     <a href="matlab:help beamPath.getWaists">getWaists</a> - returns an array of the locations of beam waists.
     %  - These methods are for making plot representations of a beam path:
     %     <a href="matlab:help beamPath.plotBeamWidth">plotBeamWidth</a> - plots the beam width calculated from the seed beam.
     %     <a href="matlab:help beamPath.plotGouyPhase">plotGouyPhase</a> - plots the accumulated gouy phase from the seed beam.
@@ -631,9 +640,57 @@ classdef beamPath < handle
                 end
             end
         end
-        function sensitivity = angleSensitivity(pathobj,varargin)
-            % -- beamPath.angleSensitivity --
+        function qObjOut = eigenMode(pathobj,z1,z2,lambda)
+            %  -- beamPath.eigenMode --
+            % Returns a beamq object that represents the eingenmode of propagation
+            % through a part of a beam path. 
             %
+            % syntax: eigen = path1.eigenMode(z1,z2,lambda)
+            % eigen is the returned beamq object. z1 is the starting point, and
+            % z2 is the end point. Thus if a beam path has a q value given by
+            % eigen at z1, it will have the same q value at z2. If lambda is not
+            % specified, it is assumed to be 1064nm.
+            % 
+            
+            if nargin<4
+                lambda=1064e-9;
+            end
+            
+            % get ABCD matrix
+            m = pathobj.getTransferMatrix(z1,z2);
+            
+            A=m(1,1);
+            B=m(1,2);
+            C=m(2,1);
+            D=m(2,2);
+            if (A_D)^2 + 4*B*C <0
+                qout=( (A-D) + sqrt((A-D)^2 +4*B*C) ) /2 /C;
+            else
+                error('No stable eigenmode inside this resonator.');
+            end
+            
+            qObjOut=beamq(qout,lambda);
+        end
+        function sensitivity = angleSensitivity(pathobj,varargin)
+            % -- beamPath.angleSensitivity -
+            % syntax: sensitivity = path1.angleSensitivity('mirror 1','mirror 2')
+            % (if no arguent is given, the sensitivity is calculated
+            % for all componenets in the beam path)
+            % Returns an array of values representing the
+            % sensitivity of the beampath to angular motion of the
+            % components. The value returned is the matrix element
+            % which connects the TEM00 mode to the 01 mode, divided
+            % by the misalignment. So for a component having a
+            % misalignment matrix element of A, the power remaining
+            % in the TEM00 mode is P=1-(A*Theta)^2 for misalignment
+            % Theta (in radians).
+            % 
+            % options:
+            % To calculate only the combined sensitivity of the entire
+            % path, by adding all sensitivities in quadrature, use the
+            % argument '-c'.
+            % Note: the only types of objects for which this returns a
+            % non-zero value are curved mirrors and flat mirrors.
             
             arraySize = size(pathobj);
             
@@ -701,7 +758,25 @@ classdef beamPath < handle
         end
         function sensitivity = lateralSensitivity(pathobj,varargin)
             % -- beamPath.lateralSensitivity --
+            % syntax: sensitivity = path1.lateralSensitivity('mirror 1','mirror 2')
+            % (if no arguent is given, the sensitivity is calculated
+            % for all componenets in the beam path)
+            % Returns an array of values representing the
+            % sensitivity of the beampath to lateral motion of the
+            % components. The value returned is the matrix element
+            % which connects the TEM00 mode to the 01 mode, divided
+            % by the lateral displacement. So for a component having a
+            % lateral displacement matrix element of A, the power remaining
+            % in the TEM00 mode is P=1-(A*DeltaY)^2 for lateral displacement
+            % DeltaY (in meters).
+            % 
+            % options:
+            % To calculate only the combined sensitivity of the entire
+            % path, by adding all sensitivities in quadrature, use the
+            % argument '-c'.
             %
+            % Note: the only objects which return a non-zero value are
+            % curved mirrors and lenses.
             
             arraySize = size(pathobj);
             
@@ -779,7 +854,26 @@ classdef beamPath < handle
         end
         function sensitivity = positionSensitivity(pathobj,varargin)
             % -- position sensitivity --
+            % syntax: sensitivity = path1.positionSensitivity('mirror 1','mirror 2')
+            % (if no arguent is given, the sensitivity is calculated
+            % for all componenets in the beam path)
+            % Returns an array of values representing the
+            % sensitivity of the beampath to axial position motion of the
+            % components (motion along the z axis). 
+            % The value returned is the matrix element
+            % which connects the TEM00 mode to the TEM20+TEM02 mode, divided
+            % by the axial displacement. So for a component having a
+            % axial displacement matrix element of A, the power remaining
+            % in the TEM00 mode is P=1-(A*DeltaZ)^2 for axial displacement
+            % DeltaZ (in meters).
+            % 
+            % options:
+            % To calculate only the combined sensitivity of the entire
+            % path, by adding all sensitivities in quadrature, use the
+            % argument '-c'.
             %
+            % Note: the only objects which return a non-zero value are
+            % curved mirrors, flat mirrors and lenses.
             
             arraySize = size(pathobj);
             
@@ -875,7 +969,13 @@ classdef beamPath < handle
         end
         function sensitivitySummary(pathobj,varargin)
             % -- beamPath.sensitivitySummary --
+            % syntax: path1.sensitivitySummary('mirror 1','mirror 2')
+            % (if no arguent is given, the sensitivity is calculated
+            % for all componenets in the beam path)
             %
+            % Displays a summary of the beam path components
+            % sensitivity to misalignments, lateral displacements and
+            % axial displacements.
             
             if isempty(pathobj.targetz) || isempty(pathobj.targetq.q)
                 error('Can''t do sensitivity, no target beam is defined.')
