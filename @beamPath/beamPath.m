@@ -920,13 +920,24 @@ classdef beamPath < handle
             disp(dispstring);
             disp(' ');
         end
-        function [zList,qList] = getWaists(pathobj,zdomain)
-            % 2 outputs: a list of positions of waists, and beamq objects
-            % of the waists
+        function [zList,qList] = getWaists(pathobj,z1,z2)
+            % -- beamPath.getWaists --
+            % Returns an array of the position of all waists in the beam path
+            % between two points.
+            % syntax:
+            % waistPositions = path1.getWaists(z1,z2)
+            % waistPostions is an array of the positions of all waists between z1
+            % and z2. If no arguments are given, then all waists in the beam 
+            % path are returned.
+            %
+            % A second optional output argument may be requested which contains 
+            % an array of beamq objects for each of the waists found:
+            % [waistPostions,waistBeamQs] = path1.getWaists(z1,z2)
             
-            % if zdomain isn't defined, make it -inf..inf
+            % if z limits aren't defined, make them -inf..inf
             if nargin<2
-                zdomain = [-inf inf];
+                z1=-inf;
+                z2=inf;
             end
             
             % first find all the waists after the first component
@@ -935,8 +946,8 @@ classdef beamPath < handle
             % zdomain to the list, loop will go through the number of
             % comps, not including the end of zdomain
             
-            zmin = min(zdomain);
-            zmax = max(zdomain);
+            zmin = min([z1 z2]);
+            zmax = max([z1 z2]);
             
             zComponents = [pathobj.components.z];
             zComponents = zComponents(zmin < zComponents & zComponents <=zmax);
@@ -1172,7 +1183,7 @@ classdef beamPath < handle
                 colorString = 'k';
             end
             
-            [waistZs,waistQs]=pathobj.getWaists(zdomain);
+            [waistZs,waistQs]=pathobj.getWaists(min(zdomain),max(zdomain));
             
             for jj = 1:length(waistZs)
                 waistString = {['w_0 = ' num2str(round(waistQs(jj).beamWidth/1e-6)) '\mum']};
