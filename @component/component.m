@@ -186,6 +186,8 @@ classdef component < handle
             M = refract(R2, n, 1)*dist(thickness)*refract(R1,1,n);
             objout = component(M,Z);
             objout.type='dielectric';
+            objout.parameters=rmfield(objout.parameters,'none');
+            objout.parameters.length = thickness;
             if nargin > 1
                 objout.label = label;
             end
