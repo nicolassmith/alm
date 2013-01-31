@@ -1,0 +1,208 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>a la mode demonstration</title><meta name="generator" content="MATLAB 7.14"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-01-31"><meta name="DC.source" content="almdemo.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+
+  </style></head><body><div class="content"><h1>a la mode demonstration</h1><!--introduction--><p>mode matching and beam propagation solutions in MATLAB.</p><p>a la mode is a stimple library of gaussian ABCD matrix tools intended to optimize and visualize optical systems.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">simple beam path</a></li><li><a href="#2">mode matching optimization</a></li><li><a href="#3">select the best solution and plot it</a></li><li><a href="#4">other features and limitations</a></li></ul></div><h2>simple beam path<a name="1"></a></h2><p>In this example, we will design a simple beam path and then define a target beam for modematchin, and choose an optimum configuration from a list of possible lens choices.</p><pre class="codeinput"><span class="comment">% here we design an initial simple beam path</span>
+goo = beamPath;
+goo.addComponent(component.lens(1.25,.75,<span class="string">'lens1'</span>));
+goo.addComponent(component.lens(1.75,3.25,<span class="string">'lens2'</span>));
+goo.seedWaist(.2e-3,0);
+
+<span class="comment">% plot the results</span>
+zplot = -1:.01:6.5;
+goo.components
+goo.plotSummary(zplot);
+</pre><pre class="codeoutput"> 
+ans = 
+ 
+    label    z (m)     type    parameters         
+    -----    -----     ----    ----------         
+    lens1    0.7500    lens    focalLength: 1.2500
+    lens2    3.2500    lens    focalLength: 1.7500
+
+
+ 
+</pre><img vspace="5" hspace="5" src="almdemo_01.png" alt=""> <h2>mode matching optimization<a name="2"></a></h2><pre class="codeinput">goo.targetWaist(.4e-3,5);
+
+<span class="comment">% we create a list of possible lens choices</span>
+focalLengthList = [-.75;.5;1.75;-2;-1;2;3;1;2.5;1.25];
+lensList = component.lens(focalLengthList);
+
+tic;
+[pathList,overlapList] = goo.chooseComponents(<span class="keyword">...</span>
+                <span class="string">'lens1'</span>,lensList,[0.5 3],<span class="keyword">...</span><span class="comment">  % choose lens1 from the list,</span>
+                <span class="string">'lens2'</span>,lensList.duplicate,[3.5 4],<span class="keyword">...</span><span class="comment"> %duplicate the list, this allows</span>
+                <span class="keyword">...</span><span class="comment">                                    %  the same component to be chosen more than once</span>
+                <span class="string">'target'</span>,[4.5,6]<span class="keyword">...</span><span class="comment"> % we can also allow the target waist position to vary while optimizing the overlap</span>
+                ,<span class="string">'-vt'</span>,.25); <span class="comment">% set the minimum initial overlap to 0.25, if a combination of components</span>
+                             <span class="comment">% has an overlap less than this, it will be skipped without trying to optimize the lens positions</span>
+toc
+</pre><pre class="codeoutput">Searching through 100 combinations. Minimum initial overlap: 0.25
+current overlap: 0.98623. best so far: 0.98623. 72 more to try.
+current overlap: 0.93378. best so far: 0.98623. 70 more to try.
+current overlap: 1. best so far: 1. 42 more to try.
+current overlap: 1. best so far: 1. 28 more to try.
+current overlap: 0.84139. best so far: 1. 22 more to try.
+current overlap: 1. best so far: 1. 8 more to try.
+current overlap: 0.49143. best so far: 1. 7 more to try.
+current overlap: 0.45192. best so far: 1. 4 more to try.
+current overlap: 0.37431. best so far: 1. 3 more to try.
+current overlap: 0.90433. best so far: 1. 2 more to try.
+current overlap: 0.4031. best so far: 1. 1 more to try.
+current overlap: 0.64769. best so far: 1. 0 more to try.
+Elapsed time is 14.038783 seconds.
+</pre><h2>select the best solution and plot it<a name="3"></a></h2><p>from the list of all solutions, we may choose the one which has good modematching, but also has minimal sensitivity to component location.</p><pre class="codeinput">pathList = pathList(overlapList &gt;= 0.99);
+sensitivityList = pathList.positionSensitivity;
+[sensitivityList,sortIndex] = sort(sensitivityList);
+pathList = pathList(sortIndex);
+bestPath = pathList(1);
+
+
+<span class="comment">% print the component list to the command window</span>
+disp(<span class="string">' '</span>)
+disp(<span class="string">' Optimized Path Component List:'</span>)
+display(bestPath.components)
+
+bestPath.plotSummary(zplot);
+</pre><pre class="codeoutput"> 
+ Optimized Path Component List:
+ 
+ = 
+ 
+    label    z (m)     type    parameters    
+    -----    -----     ----    ----------    
+    lens1    0.9965    lens    focalLength: 1
+    lens2    3.5014    lens    focalLength: 2
+
+
+ 
+</pre><img vspace="5" hspace="5" src="almdemo_02.png" alt=""> <h2>other features and limitations<a name="4"></a></h2><p>Features:</p><div><ul><li>lives inside MATLAB</li><li>built-in beam width measurement fitting</li><li>define beams as eigenmodes</li><li>angular, lateral, and positional motion sensitivity calculations</li><li>calculate gouy phase seperations of optical elements</li><li>comprehensive, cross referenced help documentation</li></ul></div><p>Limitations:</p><div><ul><li>Totally 1-D</li><li>all components are 'thin'</li></ul></div><p class="footer"><br>
+      Published with MATLAB&reg; 7.14<br></p></div><!--
+##### SOURCE BEGIN #####
+%% a la mode demonstration
+% mode matching and beam propagation solutions in MATLAB.
+%
+% a la mode is a stimple library of gaussian ABCD matrix tools intended to 
+% optimize and visualize optical systems.
+
+%% simple beam path
+%
+% In this example, we will design a simple beam path and then define a target
+% beam for modematchin, and choose an optimum configuration from a list of possible
+% lens choices.
+
+% here we design an initial simple beam path
+goo = beamPath;
+goo.addComponent(component.lens(1.25,.75,'lens1'));
+goo.addComponent(component.lens(1.75,3.25,'lens2'));
+goo.seedWaist(.2e-3,0); 
+
+% plot the results
+zplot = -1:.01:6.5;
+goo.components
+goo.plotSummary(zplot);
+
+%% mode matching optimization
+goo.targetWaist(.4e-3,5); 
+
+% we create a list of possible lens choices
+focalLengthList = [-.75;.5;1.75;-2;-1;2;3;1;2.5;1.25];
+lensList = component.lens(focalLengthList);
+
+tic;
+[pathList,overlapList] = goo.chooseComponents(...
+                'lens1',lensList,[0.5 3],...  % choose lens1 from the list,
+                'lens2',lensList.duplicate,[3.5 4],... %duplicate the list, this allows
+                ...                                    %  the same component to be chosen more than once
+                'target',[4.5,6]... % we can also allow the target waist position to vary while optimizing the overlap
+                ,'-vt',.25); % set the minimum initial overlap to 0.25, if a combination of components
+                             % has an overlap less than this, it will be skipped without trying to optimize the lens positions
+toc
+                  
+%% select the best solution and plot it
+% from the list of all solutions, we may choose the one which has good
+% modematching, but also has minimal sensitivity to component location.
+pathList = pathList(overlapList >= 0.99);
+sensitivityList = pathList.positionSensitivity;
+[sensitivityList,sortIndex] = sort(sensitivityList);
+pathList = pathList(sortIndex);
+bestPath = pathList(1);
+
+
+% print the component list to the command window
+disp(' ')
+disp(' Optimized Path Component List:')
+display(bestPath.components)
+
+bestPath.plotSummary(zplot);
+
+%% other features and limitations
+% 
+% Features:
+%
+% * lives inside MATLAB
+% * built-in beam width measurement fitting
+% * define beams as eigenmodes
+% * angular, lateral, and positional motion sensitivity calculations
+% * calculate gouy phase seperations of optical elements
+% * comprehensive, cross referenced help documentation
+% 
+% Limitations:
+%
+% * Totally 1-D
+% * all components are 'thin'
+##### SOURCE END #####
+--></body></html>
