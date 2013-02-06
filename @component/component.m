@@ -279,7 +279,10 @@ classdef component < handle
             % -- component.setLength --
             % set the real space length of an object.
             
-            obj.parameters=rmfield(obj.parameters,'none');
+            if isfield(obj.parameters,'none')
+                obj.parameters=rmfield(obj.parameters,'none');
+            end
+            
             obj.parameters.length = L;
         end
         function display(obj)            
