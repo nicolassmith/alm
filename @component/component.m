@@ -275,6 +275,13 @@ classdef component < handle
                 error('Sorry, transformation matrix M must be a 2x2 numeric matrix')
             end
         end
+        function setLength(obj,L)
+            % -- component.setLength --
+            % set the real space length of an object.
+            
+            obj.parameters=rmfield(obj.parameters,'none');
+            obj.parameters.length = L;
+        end
         function display(obj)            
             topRow =    {'label','z (m)','type'};
             lineBreak = {'-----','-----','----'};
