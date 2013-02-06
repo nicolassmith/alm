@@ -68,9 +68,8 @@ classdef beamPath < handle
     %         (usually the seed beam) to a given location.
     %     <a href="matlab:help beamPath.targetOverlap">targetOverlap</a> - calculates mode overlap of the seed and target beams.
     %  - These methods are for analyzing properties of a beam path:
-    %     <a href="matlab:help beamPath.gouySeperation">gouySeperation</a> - calculates the accumulated gouy phase between two
+    %     <a href="matlab:help beamPath.gouySeparation">gouySeparation</a> - calculates the accumulated gouy phase between two
     %         components in the beam path.
-    %     <a href="matlab:help beamPath.gouySeperation">gouySeperation</a> - calculates the accumulated gouy phase between two
     %     <a href="matlab:help beamPath.eigenMode">eigenMode</a> - calculates the eigenmode of a part of the beampath.
     %     <a href="matlab:help beamPath.angleSensitivity">angleSensitivity</a> - calculates the sensitivity of components to misalignments.
     %     <a href="matlab:help beamPath.lateralSensitivity">lateralSensitivity</a> - calculates the sensitivity of components to lateral motion.
@@ -611,10 +610,16 @@ classdef beamPath < handle
             overlapFrac = overlap(pathobj.targetq,qAtTarget);
         end
         % these are for analyzing properties of the beam path.
-        function gPhase = gouySeperation(pathobj,compLabel1,compLabel2,dontWrap)
-            % -- beamPath.gouySeperation --
+        function gPhase = gouySeperation(varargin)
+            %compatibility with previous versions
+            warning(['The function gouySeperation is misspelled, ' ...
+                     'correct spelling: gouySeparation.']);
+            gPhase = gouySeparation(varargin{:});
+        end
+        function gPhase = gouySeparation(pathobj,compLabel1,compLabel2,dontWrap)
+            % -- beamPath.gouySeparation --
             % Returns the accumulated gouy phase between two components in the beam path.
-            % syntax: gouyPhase = path1.gouySeperation('label1','label2')
+            % syntax: gouyPhase = path1.gouySeparation('label1','label2')
             % 
             % By default this function will return values in the range -90 to +90, 
             % to have the function return the gouy phase unwrapped, give the string
