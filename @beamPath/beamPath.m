@@ -114,6 +114,13 @@ classdef beamPath < handle
             losses = 1-path2.targetOverlap;
             path2.delete;
         end
+        function cost = applyCostFunc(pathobj,costFunc,zVec,varargin)
+            path2 = pathobj.duplicate;
+            path2.batchMove(zVec);
+            
+            cost = costFunc(path2);
+            path2.delete;
+        end
         function batchMove(pathobj,moveVec)
             comps = pathobj.components; % this component array will not reorder itself and get indicies mixed up
             
@@ -1465,22 +1472,37 @@ classdef beamPath < handle
             % check for options
             verbose = 0;
             relative = 0;
+            customCost = 0;
             
-            flagIndex = find(strncmp(varargin,'-',1),2); % find the option flag
-            if length(flagIndex)>1
-                error('Please only use the option flag "-" once in arguments.')
-            end
+            flagIndex = find(strncmp(varargin,'-',1)); % find the option flag
+            %if length(flagIndex)>1
+            %    error('Please only use the option flag "-" once in arguments.')
+            %end
+            removeInds = [];
             
-            if flagIndex
-                if any(varargin{flagIndex}=='v') || any(varargin{flagIndex}=='V')
+            for ind=flagIndex
+                if any(varargin{ind}=='v') || any(varargin{ind}=='V')
                     verbose = 1; % identify verbose flag
                 end
-                if any(varargin{flagIndex}=='r') || any(varargin{flagIndex}=='R')
-                    relative = 1; % identify verbose flag
+                if any(varargin{ind}=='r') || any(varargin{ind}=='R')
+                    relative = 1; % identify relative flag
                 end
-                varargin = {varargin{1:end~=flagIndex}}; % remove options from the arguments
-                lvargin = length(varargin);
+                if any(varargin{ind}=='c') || any(varargin{ind}=='C') % identify cost function flag
+                    customCost = 1;
+                    costFunction = varargin{ind+1};
+                    %varargin = {varargin{1:end~=(ind+1)}}; % remove threshold from arguments
+                    removeInds = [removeInds,ind+1];
+                end
+                %varargin = {varargin{1:end~=ind}}; % remove options from the arguments
+                %lvargin = length(varargin);
+                removeInds = [removeInds,ind];
+                
             end
+            
+            for ind=sort(removeInds,'descend')
+                varargin = {varargin{1:end~=(ind)}};
+            end
+            lvargin = length(varargin);
             
             if mod(lvargin,2)==1
                 error('Number of args not even, each component needs a range, you can use inf to be unconstrained')
@@ -1514,11 +1536,16 @@ classdef beamPath < handle
             end
             
             % call fminsearchbnd
-            [zOptimized,optimumLoss] = fminsearchbnd(@pathobj.lossFunc,z0,LB,UB); 
+            if customCost
+                cost = @(zVec,vargs) pathobj.applyCostFunc(costFunction,zVec,vargs);%BOOK
+            else
+                cost = @pathobj.lossFunc;
+            end
+            [zOptimized,optimumLoss] = fminsearchbnd(cost,z0,LB,UB); 
             
             % obfuscated output
             if verbose
-                disp(['loss is ' num2str(optimumLoss) '. for z='])
+                disp(['cost is ' num2str(optimumLoss) '. for z='])
                 disp(zOptimized);
             end
             
@@ -1575,26 +1602,41 @@ classdef beamPath < handle
             verbose = 0;
             minThresh = 0;
             relative = 0;
+            customCost = 0;
             
-            flagIndex = find(strncmp(varargin,'-',1),2); % find the option flag
-            if length(flagIndex)>1
-                error('Please only use the option flag "-" once in arguments.')
-            end
+            flagIndex = find(strncmp(varargin,'-',1)); % find the option flag
+            %if length(flagIndex)>1
+            %    error('Please only use the option flag "-" once in arguments.')
+            %end
+            removeInds = [];
             
-            if flagIndex
-                if any(varargin{flagIndex}=='v') || any(varargin{flagIndex}=='V') % identify verbose flag
+            for ind = flagIndex
+                if any(varargin{ind}=='v') || any(varargin{ind}=='V') % identify verbose flag
                     verbose = 1; 
                 end
-                if any(varargin{flagIndex}=='r') || any(varargin{flagIndex}=='R') % identify verbose flag
+                if any(varargin{ind}=='r') || any(varargin{ind}=='R') % identify verbose flag
                     relative = 1; 
                 end
-                if any(varargin{flagIndex}=='t') || any(varargin{flagIndex}=='T') % identify threshold flag
-                    minThresh = varargin{flagIndex+1};
-                    varargin = {varargin{1:end~=(flagIndex+1)}}; % remove threshold from arguments
+                if any(varargin{ind}=='t') || any(varargin{ind}=='T') % identify threshold flag
+                    minThresh = varargin{ind+1};
+                    %varargin = {varargin{1:end~=(ind+1)}}; % remove threshold from arguments
+                    removeInds = [removeInds,ind+1];
                 end
-                varargin = {varargin{1:end~=flagIndex}}; % remove options from the arguments
-                lvargin = length(varargin);
+                if any(varargin{ind}=='c') || any(varargin{ind}=='C') % identify threshold flag
+                    customCost = 1;
+                    costFunction = varargin{ind+1};
+                    %varargin = {varargin{1:end~=(ind+1)}}; % remove threshold from arguments
+                    removeInds = [removeInds,ind+1];
+                end
+                %varargin = {varargin{1:end~=ind}}; % remove options from the arguments
+                %lvargin = length(varargin);
+                removeInds = [removeInds,ind];
             end
+            
+            for ind=sort(removeInds,'descend')
+                varargin = {varargin{1:end~=(ind)}};
+            end
+            lvargin = length(varargin);
             
             % This block will look in the arguments for a reference to the target
             indexTarget = find(strcmpi(varargin,'target'),2);
@@ -1642,6 +1684,11 @@ classdef beamPath < handle
                 argCell = [argCell,{'-r'}];
             end
             
+            % pass custom cost
+            if customCost
+                argCell = [argCell,{'-c',costFunction}];
+            end
+            
             % duplicate the user's path so we don't screw up the original
             pathobj = pathin.duplicate;
             
@@ -1670,7 +1717,7 @@ classdef beamPath < handle
                     for kk = jj+1:numlists
                         if compLists{jj}(indicies(jj)) == compLists{kk}(indicies(kk))
                             doubleFlag = 1;
-                            overlapList(step) = -1;
+                            overlapList(step) = NaN;
                             break
                         end
                     end
@@ -1688,16 +1735,18 @@ classdef beamPath < handle
                     end
 
                     % check the unoptimized overlap against the minimum cutoff, if it passes, try to optimize
-                    initialOverlap = pathobj.targetOverlap;
-                    if initialOverlap >= minThresh
+                    if ~minThresh || pathobj.targetOverlap >= minThresh
                         [pathList(step),overlapList(step)] = pathobj.optimizePath(argCell{:});
                         if verbose
-                            if overlapList(step) > bestOverlap
-                                bestOverlap = overlapList(step);
+                            if ~customCost
+                                if overlapList(step) > bestOverlap
+                                    bestOverlap = overlapList(step);
+                                end
+                                disp(['current overlap: ' num2str(overlapList(step)) '. best so far: '...
+                                    num2str(bestOverlap) '. ' num2str(totalSteps-step) ' more to try.'])
+                            else
+                                disp(['current cost: ' num2str(1-overlapList(step)) '. '  num2str(totalSteps-step) ' more to try.'])
                             end
-                            disp(['current overlap: ' num2str(overlapList(step)) '. best so far: '...
-                                        num2str(bestOverlap) '. ' num2str(totalSteps-step) ' more to try.'])
-                            
                         end
                     end
                 end
@@ -1716,7 +1765,7 @@ classdef beamPath < handle
             end
             
             % remove illegal or skipped combinations
-            ix = overlapList ~= -1;
+            ix = ~isnan(overlapList);
             overlapList = overlapList(ix);
             pathList = pathList(ix);
             
@@ -1724,8 +1773,14 @@ classdef beamPath < handle
                 error('Could not find any solutions, try changing initial conditions or lowering minimum overlap threshold.')
             end
             
+            if customCost
+                sortDir = 'ascend';
+            else
+                sortDir = 'descend';
+            end
+            
             % now sort path list according to overlap
-            [overlapList,ix] = sort(overlapList,'descend');
+            [overlapList,ix] = sort(overlapList,sortDir);
             pathList = pathList(ix);
         end
         % used for beam width fitting
