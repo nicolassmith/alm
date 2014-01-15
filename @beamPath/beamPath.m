@@ -1697,7 +1697,11 @@ classdef beamPath < handle
             pathList(totalSteps,1) = beamPath;
             
             if verbose
-                disp(['Searching through ' num2str(totalSteps) ' combinations. Initial ' costTransform.name ' threshhold: ' num2str(transCostThresh)])
+                dispString = ['Searching through ' num2str(totalSteps) ' combinations.'];
+                if ~useDefaultThresh
+                    dispString = [dispString  ' Initial ' costTransform.name ' threshhold: ' num2str(transCostThresh)];
+                end
+                disp(dispString)
             end
             
             while indicies(end)<=indexlimit(end) % main loop
