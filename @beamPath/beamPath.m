@@ -1461,11 +1461,15 @@ classdef beamPath < handle
             % position can also be optimized. The numbers represent the valid range of positions that can 
             % be searched for that object. (Eg. 'lens1' is allowed to be placed between z=-1.5 and z=-1)
             %
-            % options: include the string '-v' (verbose) as one of your input arguments to enable some 
-            %   output to the command window. The option '-r' will make the placement restriction arguments
-            %   relative to the current component position. If you want to allow 'lens1' to move plus or minus
-            %   10 centimeters, the arguments would go ...'lens1',[-0.1,0.1]... Combine both options by using '-vr'.
-            
+            % options:
+            %   '-v' Include the string '-v' (verbose) as one of your input arguments to enable some
+            %        output to the command window.
+            %   '-r' The option '-r' will make the placement restriction arguments
+            %        relative to the current component position. If you want to allow 'lens1' to move plus or minus
+            %        10 centimeters, the arguments would go ...'lens1',[-0.1,0.1]...
+            %   '-c' Use this option and a function handle as the following argument, this function will be used as a
+            %        custom cost function that will be minimized while the beam path is modified, instead of maximizing the
+            %        target modematching. See customcostexample.m in the alm/examples directory.
             lvargin = length(varargin);
             if lvargin<1  
                 error('Input arguments are required for optimizePath.')
@@ -1578,14 +1582,16 @@ classdef beamPath < handle
             % example: [pathlist,overlaplist] = path1.chooseComponents('lens1',lensList,[.5 .75],'lens2',lensList,[1.2 1.3])
             %
             % options:
-            %   '-v' Include the string '-v' for verbose output. 
-            %   '-t' Use the option '-t' followed by a number as the next argument to set 
+            %   '-v' Include the string '-v' for verbose output.
+            %   '-t' Use the option '-t' followed by a number as the next argument to set
             %          a threshold below which solutions will not attempt to be optimized after the initial
             %          placement of the components. This can be used to reduce the search time significantly when the number
-            %          of combinations is large. 
+            %          of combinations is large.
             %   '-r' will make the upper and lower Z bounds of components act relative to the current z position.
+            %   '-c' Use this option and a function handle as the following argument, this function will be used as a
+            %        custom cost function that will be minimized while the beam path is modified, instead of maximizing the
+            %        target modematching. See customcostexample.m in the alm/examples directory.
             %
-            %    combine options by doing '-vr' or '-vrt' etc. If using 't', the following argument is the threshold.
 
             lvargin = length(varargin);
             if lvargin<1
