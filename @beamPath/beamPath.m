@@ -1533,11 +1533,11 @@ classdef beamPath < handle
             
 
             cost = @(zVec,vargs) pathobj.applyCostFunc(costFunction,zVec,vargs);
-            [zOptimized,optimumLoss] = fminsearchbnd(cost,z0,LB,UB); 
+            [zOptimized,optimumCost] = fminsearchbnd(cost,z0,LB,UB); 
             
             % obfuscated output
             if verbose
-                disp(['cost is ' num2str(optimumLoss) '. for z='])
+                disp([costTransform.name ' is ' num2str(costTransform.f(optimumCost)) '. for z='])
                 disp(zOptimized);
             end
             
@@ -1545,9 +1545,9 @@ classdef beamPath < handle
             optimizedPathobj = pathobj.duplicate;
             optimizedPathobj.batchMove(zOptimized);
             
-            optimumOverlap = costTransform.f(optimumLoss);
+            optimumOverlap = costTransform.f(optimumCost);
         end
-        function [pathList,overlapList] = chooseComponents(pathin,varargin)
+        function [pathList,costList] = chooseComponents(pathin,varargin)
             % -- beamPath.chooseComponents --
             % This function will return an array of beamPath objects which are created 
             % by selecting components from an array of component objects and optimizing the positions using
