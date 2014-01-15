@@ -676,7 +676,9 @@ classdef beamPath < handle
             C=m(2,1);
             D=m(2,2);
             if (A-D)^2 + 4*B*C <0
-                qout=conj( (A-D) + sqrt((A-D)^2 +4*B*C) ) /2 /C;
+                qout=(A-D)/2/C + sqrt((A-D)^2 +4*B*C)/2 /abs(C);
+                % C could be negative and we'd like to choose a physical
+                % solution where the imaginary part is positive.
             else
                 error('No stable eigenmode inside this resonator.');
             end
