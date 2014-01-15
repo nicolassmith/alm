@@ -1263,7 +1263,7 @@ classdef beamPath < handle
                 if pathobj.seedq.radiusOfCurvature == Inf
                     seedString{3} = 'ROC = \infty';
                 end
-                [seedPlotx seedPloty] = dsxy2figxy(gca,pathobj.seedz,yoffset);
+                [seedPlotx, seedPloty] = dsxy2figxy(gca,pathobj.seedz,yoffset);
                 annotation('textarrow',[seedPlotx-.01 seedPlotx],[seedPloty+.05 seedPloty],...
                     'string',seedString,'FontSize',8,'Color',colorString);
             end
@@ -1279,7 +1279,7 @@ classdef beamPath < handle
                     targetString = [targetString;['Overlap = ' num2str(pathobj.targetOverlap)]];
                 end
 
-                [targetPlotx targetPloty] = dsxy2figxy(gca,pathobj.targetz,yoffset);
+                [targetPlotx, targetPloty] = dsxy2figxy(gca,pathobj.targetz,yoffset);
                 annotation('textarrow',[targetPlotx+.01 targetPlotx],[targetPloty-.05 targetPloty],...
                     'string',targetString,'FontSize',8,'Color',colorString);
             end
@@ -1299,8 +1299,8 @@ classdef beamPath < handle
             
             for jj = 1:length(waistZs)
                 waistString = {['w_0 = ' num2str(round(waistQs(jj).beamWidth/1e-6)) '\mum']};
-                [waistPlotx waistPloty] = dsxy2figxy(gca,waistZs(jj),waistQs(jj).beamWidth);
-                [waistPlotx waistPlotyneg] = dsxy2figxy(gca,waistZs(jj),-waistQs(jj).beamWidth);
+                [waistPlotx, waistPloty] = dsxy2figxy(gca,waistZs(jj),waistQs(jj).beamWidth);
+                [waistPlotx, waistPlotyneg] = dsxy2figxy(gca,waistZs(jj),-waistQs(jj).beamWidth);
                 try
                 annotation('textarrow',[waistPlotx waistPlotx],[waistPloty+arrowLength waistPloty],...
                     'string',waistString,'FontSize',8,'Color',colorString);
