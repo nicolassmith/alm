@@ -1592,14 +1592,15 @@ classdef beamPath < handle
 
             % check for options
             verbose = 0;
-            minThresh = 0;
             relative = 0;
-            customCost = 0;
+            costFunction = @(path) 1-path.targetOverlap;
+            costTransform.f = @(cost) 1-cost;
+            costTransform.name = 'overlap';
+            costTransform.skip = @(transCost,thresh) transCost <= thresh;
+            transCostThresh = 0;
+            useDefaultThresh = 1;
             
             flagIndex = find(strncmp(varargin,'-',1)); % find the option flag
-            %if length(flagIndex)>1
-            %    error('Please only use the option flag "-" once in arguments.')
-            %end
             removeInds = [];
             
             for ind = flagIndex
@@ -1610,18 +1611,21 @@ classdef beamPath < handle
                     relative = 1; 
                 end
                 if any(varargin{ind}=='t') || any(varargin{ind}=='T') % identify threshold flag
-                    minThresh = varargin{ind+1};
-                    %varargin = {varargin{1:end~=(ind+1)}}; % remove threshold from arguments
+                    transCostThresh = varargin{ind+1};
+                    useDefaultThresh = 0;
                     removeInds = [removeInds,ind+1];
                 end
                 if any(varargin{ind}=='c') || any(varargin{ind}=='C') % identify threshold flag
-                    customCost = 1;
+                    %customCost = 1;
                     costFunction = varargin{ind+1};
-                    %varargin = {varargin{1:end~=(ind+1)}}; % remove threshold from arguments
+                    costTransform.f = @(cost) cost;
+                    costTransform.name = 'cost';
+                    costTransform.skip = @(transCost,thresh) transCost >= thresh;
+                    if useDefaultThresh
+                        transCostThresh = Inf;
+                    end
                     removeInds = [removeInds,ind+1];
                 end
-                %varargin = {varargin{1:end~=ind}}; % remove options from the arguments
-                %lvargin = length(varargin);
                 removeInds = [removeInds,ind];
             end
             
@@ -1677,30 +1681,26 @@ classdef beamPath < handle
             end
             
             % pass custom cost
-            if customCost
-                argCell = [argCell,{'-c',costFunction}];
-            end
+            argCell = [argCell,{'-c',costFunction}];
             
             % duplicate the user's path so we don't screw up the original
             pathobj = pathin.duplicate;
             
             % set up the loop
-
             indicies = ones(1,numlists);
             indexlimit = cellfun(@length,compLists);
             
             step = 1;
             totalSteps = prod(indexlimit);
-            overlapList = -1*ones(totalSteps,1);
-            bestOverlap = -1;
+            costList = Inf*ones(totalSteps,1);
+            bestCost = Inf;
             pathList(totalSteps,1) = beamPath;
             
             if verbose
-                disp(['Searching through ' num2str(totalSteps) ' combinations. Minimum initial overlap: ' num2str(minThresh)])
+                disp(['Searching through ' num2str(totalSteps) ' combinations. Initial ' costTransform.name ' threshhold: ' num2str(transCostThresh)])
             end
             
             while indicies(end)<=indexlimit(end) % main loop
-                
                 % do things here
                 
                 % check that a component is not getting double-used
@@ -1709,7 +1709,7 @@ classdef beamPath < handle
                     for kk = jj+1:numlists
                         if compLists{jj}(indicies(jj)) == compLists{kk}(indicies(kk))
                             doubleFlag = 1;
-                            overlapList(step) = NaN;
+                            costList(step) = NaN;
                             break
                         end
                     end
@@ -1726,19 +1726,15 @@ classdef beamPath < handle
                         pathobj.replaceComponent(compLabels{jj},compCopy);
                     end
 
-                    % check the unoptimized overlap against the minimum cutoff, if it passes, try to optimize
-                    if ~minThresh || pathobj.targetOverlap >= minThresh
-                        [pathList(step),overlapList(step)] = pathobj.optimizePath(argCell{:});
+                    % check the unoptimized cost against the threshold, if it passes, try to optimize
+                    if  ~costTransform.skip(costTransform.f(costFunction(pathobj)),transCostThresh)
+                        [pathList(step),costList(step)] = pathobj.optimizePath(argCell{:});
                         if verbose
-                            if ~customCost
-                                if overlapList(step) > bestOverlap
-                                    bestOverlap = overlapList(step);
-                                end
-                                disp(['current overlap: ' num2str(overlapList(step)) '. best so far: '...
-                                    num2str(bestOverlap) '. ' num2str(totalSteps-step) ' more to try.'])
-                            else
-                                disp(['current cost: ' num2str(1-overlapList(step)) '. '  num2str(totalSteps-step) ' more to try.'])
+                            if costList(step) < bestCost
+                                bestCost = costList(step);
                             end
+                            disp(['current ' costTransform.name ': ' num2str(costTransform.f(costList(step))) '. best so far: '...
+                                num2str(costTransform.f(bestCost)) '. ' num2str(totalSteps-step) ' more to try.'])
                         end
                     end
                 end
@@ -1757,22 +1753,17 @@ classdef beamPath < handle
             end
             
             % remove illegal or skipped combinations
-            ix = ~isnan(overlapList);
-            overlapList = overlapList(ix);
+            ix = ~isnan(costList);
+            costList = costList(ix);
             pathList = pathList(ix);
             
-            if isempty(overlapList)
-                error('Could not find any solutions, try changing initial conditions or lowering minimum overlap threshold.')
+            if isempty(costList)
+                error(['Could not find any solutions, try changing initial conditions or changing ' costTransform.name ' threshold.'])
             end
             
-            if customCost
-                sortDir = 'ascend';
-            else
-                sortDir = 'descend';
-            end
-            
-            % now sort path list according to overlap
-            [overlapList,ix] = sort(overlapList,sortDir);
+            % now sort path list according to cost
+            [costList,ix] = sort(costList);
+            costList = arrayfun(costTransform.f,costList);
             pathList = pathList(ix);
         end
         % used for beam width fitting
