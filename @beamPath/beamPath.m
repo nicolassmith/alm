@@ -1469,15 +1469,14 @@ classdef beamPath < handle
                 error('Input arguments are required for optimizePath.')
             end
             
-            % check for options
+            % default options
             verbose = 0;
             relative = 0;
-            customCost = 0;
+            costFunction = @(path) 1-path.targetOverlap;
+            costTransform.f = @(cost) 1-cost;
+            costTransform.name = 'overlap';
             
             flagIndex = find(strncmp(varargin,'-',1)); % find the option flag
-            %if length(flagIndex)>1
-            %    error('Please only use the option flag "-" once in arguments.')
-            %end
             removeInds = [];
             
             for ind=flagIndex
@@ -1488,15 +1487,12 @@ classdef beamPath < handle
                     relative = 1; % identify relative flag
                 end
                 if any(varargin{ind}=='c') || any(varargin{ind}=='C') % identify cost function flag
-                    customCost = 1;
                     costFunction = varargin{ind+1};
-                    %varargin = {varargin{1:end~=(ind+1)}}; % remove threshold from arguments
+                    costTransform.f = @(cost) cost;
+                    costTransform.name = 'cost';
                     removeInds = [removeInds,ind+1];
-                end
-                %varargin = {varargin{1:end~=ind}}; % remove options from the arguments
-                %lvargin = length(varargin);
+                end;
                 removeInds = [removeInds,ind];
-                
             end
             
             for ind=sort(removeInds,'descend')
@@ -1535,12 +1531,8 @@ classdef beamPath < handle
                 LB(namedIndex) = originShift + varargin{2*j}(1);
             end
             
-            % call fminsearchbnd
-            if customCost
-                cost = @(zVec,vargs) pathobj.applyCostFunc(costFunction,zVec,vargs);%BOOK
-            else
-                cost = @pathobj.lossFunc;
-            end
+
+            cost = @(zVec,vargs) pathobj.applyCostFunc(costFunction,zVec,vargs);
             [zOptimized,optimumLoss] = fminsearchbnd(cost,z0,LB,UB); 
             
             % obfuscated output
@@ -1553,7 +1545,7 @@ classdef beamPath < handle
             optimizedPathobj = pathobj.duplicate;
             optimizedPathobj.batchMove(zOptimized);
             
-            optimumOverlap = 1-optimumLoss;
+            optimumOverlap = costTransform.f(optimumLoss);
         end
         function [pathList,overlapList] = chooseComponents(pathin,varargin)
             % -- beamPath.chooseComponents --
