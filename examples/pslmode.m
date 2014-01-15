@@ -1,5 +1,4 @@
 % ---------- Example script for using a la mode mode matching utilities ------------
-close all
 
 % create a new beam path object
 PSLypath = beamPath; 
@@ -60,7 +59,7 @@ disp(['modematching = ',num2str(modematch)])
 % define plotting domain
 zdomain = -.2:.01:42*0.0254;
 
-figure(1)
+figure(661)
 subplot(2,1,1)
 hold on % right now all the plot commands act like the matlab plot command and will overwrite the existing
         % figure unless you turn hold on

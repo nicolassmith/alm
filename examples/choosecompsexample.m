@@ -1,5 +1,4 @@
 % Example script using chooseComponents method
-close all
 
 disp(' chooseComponents example script.')
 disp(' ')
@@ -21,7 +20,7 @@ goo.targetWaist(.4e-3,5); % define target beam
 
 zdomain = -1:.01:6;
 
-figure(2)
+figure(266)
 hold on
 orighandle=goo.plotBeamWidth(zdomain);
 goo.plotComponents(zdomain)
