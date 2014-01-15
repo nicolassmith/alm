@@ -1,6 +1,5 @@
 % ---------- Example script for using a la mode mode matching utilities ------------
 close all
-clear classes
 
 % create a new beam path object
 PSLypath = beamPath; 

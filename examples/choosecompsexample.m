@@ -1,6 +1,5 @@
 % Example script using chooseComponents method
 close all
-clear classes
 
 disp(' chooseComponents example script.')
 disp(' ')
