@@ -210,7 +210,7 @@ classdef beamPath < handle
             pathobj.sortComponents;
             compArray = pathobj.components_raw;
         end
-        % overloaded builtin methods
+        % overridden builtin methods
         function display(pathobj)
             if length(pathobj)>1
                 sizeobj = size(pathobj);
