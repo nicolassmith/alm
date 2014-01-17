@@ -1,0 +1,218 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Custom cost function example script</title><meta name="generator" content="MATLAB 8.2"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2014-01-17"><meta name="DC.source" content="customcostexample.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>Custom cost function example script</h1><!--introduction--><p>This example shows how to use a custom cost function with the chooseComponents function. In this case, we would like to design a gouy phase telescope where the beam size is not too small, but we maintain good Gouy phase separation between our wavefront sensors (WFS). The file gouyCost.m takes a beamPath object as an argument, and calculates a cost which includes a penalty both for small beams, and for bad Gouy phase separation.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Define constants</a></li><li><a href="#2">Initial Beam Path</a></li><li><a href="#3">Beam path optimization</a></li><li><a href="#5">The improved beam path</a></li></ul></div><h2>Define constants<a name="1"></a></h2><pre class="codeinput">cm       = 0.01;
+um       = 1e-6;
+in       = 0.0254;
+diameter = 0.5;
+</pre><h2>Initial Beam Path<a name="2"></a></h2><p>construct the current beam path object</p><pre class="codeinput">isct6 = beamPath;
+isct6.seedq = beamq(0.0225 + 0.1519i);
+isct6.seedz = 0.9;
+
+<span class="comment">% populate components currently on table</span>
+zWFSA = 75*cm;
+zWFSB = 98.5*cm;
+
+isct6.addComponent(component(eye(2),zWFSA,<span class="string">'WFS A'</span>));
+isct6.addComponent(component(eye(2),zWFSB,<span class="string">'WFS B'</span>));
+isct6.addComponent(component.lens(0.687,0,<span class="string">'lens 1'</span>));
+isct6.addComponent(component.flatMirror(15*in,<span class="string">'LSC pickoff'</span>));
+
+figure(842)
+isct6.plotSummary()
+title(<span class="string">'Initial beam path configuration'</span>)
+</pre><img vspace="5" hspace="5" src="customcostexample_01.png" alt=""> <h2>Beam path optimization<a name="3"></a></h2><p>start new layout, make some initial changes by hand</p><pre class="codeinput">newisct6 = isct6.branchPath(-1*in);
+newisct6.moveComponent(<span class="string">'LSC pickoff'</span>,-8*in);
+newisct6.moveComponent(<span class="string">'WFS A'</span>,11.7*in+12*in,<span class="string">'absolute'</span>);
+newisct6.addComponent(component.lens(-.229,11.7*in,<span class="string">'lens 2'</span>));
+
+<span class="comment">% a list of possible focal lengths for the new lens</span>
+lens2list = component.lens([-.3436 -1.1456 -.2291 Inf]);
+</pre><p>Run the optimization algorithm with custom cost function defined in <a href="gouyCost.html">gouyCost.m</a>.</p><pre class="codeinput">tic
+sol = newisct6.chooseComponents(<span class="keyword">...</span>
+    <span class="string">'lens 2'</span>,lens2list,[-3*in 5*in],<span class="keyword">...</span><span class="comment"> % allow lens2 to be changed for other lenses in the list, and move -3 to +5 inches</span>
+    <span class="string">'WFS B'</span>,[],[-17*in 30*in],<span class="keyword">...</span><span class="comment">       % allow WFS2 to move -17 to +30 inches</span>
+    <span class="string">'-r'</span>,<span class="keyword">...</span><span class="comment">                            % make the movement ranges relative to current component locations</span>
+    <span class="string">'-v'</span>,<span class="keyword">...</span><span class="comment">                            % print out information while searching</span>
+    <span class="string">'-c'</span>,@gouyCost);                    <span class="comment">% use a custom cost function to minimize, defined in gouyCost.m</span>
+toc
+</pre><pre class="codeoutput">Searching through 4 combinations.
+current cost: 1.0496. best so far: 1.0496. 3 more to try.
+current cost: 0.4738. best so far: 0.4738. 2 more to try.
+current cost: 1.1076. best so far: 0.4738. 1 more to try.
+current cost: 0.91087. best so far: 0.4738. 0 more to try.
+Elapsed time is 24.688683 seconds.
+</pre><h2>The improved beam path<a name="5"></a></h2><p>the optimal solution is the first element of the returned array</p><pre class="codeinput">bestisct6 = sol(1);
+figure(423)
+bestisct6.plotSummary();
+title(<span class="string">'Improved beam path configuration'</span>)
+
+<span class="comment">% print the components to the console</span>
+bestisct6.components
+
+<span class="comment">% print out some parameters of the new beam path</span>
+zWFSA = bestisct6.component(<span class="string">'WFS A'</span>).z;
+zWFSB = bestisct6.component(<span class="string">'WFS B'</span>).z;
+qWFSA = bestisct6.qPropagate(zWFSA);
+qWFSB = bestisct6.qPropagate(zWFSB);
+disp([<span class="string">'WFS separation: '</span> num2str(bestisct6.gouySeparation(<span class="string">'WFS A'</span>,<span class="string">'WFS B'</span>)) <span class="string">' deg'</span>])
+disp([<span class="string">'Diameter on WFSA: '</span> num2str(qWFSA.beamWidth/(um*diameter)) <span class="string">' um'</span>])
+disp([<span class="string">'Diameter on WFSB: '</span> num2str(qWFSB.beamWidth/(um*diameter)) <span class="string">' um'</span>])
+</pre><pre class="codeoutput"> 
+ans = 
+ 
+    label          z (m)     type           parameters         
+    -----          -----     ----           ----------         
+    lens 1              0    lens           focalLength: 0.6870
+    LSC pickoff    0.1778    flat mirror    none:            
+    lens 2         0.2611    lens           focalLength: -1.145
+    WFS A          0.6020    other          none:            
+    WFS B          1.7470    other          none:            
+
+
+ 
+WFS separation: 78.1144 deg
+Diameter on WFSA: 1491.4907 um
+Diameter on WFSB: 1062.8121 um
+</pre><img vspace="5" hspace="5" src="customcostexample_02.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2013b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% Custom cost function example script
+% This example shows how to use a custom cost function with the
+% chooseComponents function. In this case, we would like to design a gouy
+% phase telescope where the beam size is not too small, but we maintain
+% good Gouy phase separation between our wavefront sensors (WFS). The file
+% gouyCost.m takes a beamPath object as an argument, and calculates a cost
+% which includes a penalty both for small beams, and for bad Gouy phase
+% separation.
+
+%% Define constants
+cm       = 0.01;
+um       = 1e-6;
+in       = 0.0254;
+diameter = 0.5;
+
+%% Initial Beam Path
+% construct the current beam path object
+isct6 = beamPath;
+isct6.seedq = beamq(0.0225 + 0.1519i);
+isct6.seedz = 0.9;
+
+% populate components currently on table
+zWFSA = 75*cm;
+zWFSB = 98.5*cm;
+
+isct6.addComponent(component(eye(2),zWFSA,'WFS A'));
+isct6.addComponent(component(eye(2),zWFSB,'WFS B'));
+isct6.addComponent(component.lens(0.687,0,'lens 1'));
+isct6.addComponent(component.flatMirror(15*in,'LSC pickoff'));
+
+figure(842)
+isct6.plotSummary()
+title('Initial beam path configuration')
+
+%% Beam path optimization
+% start new layout, make some initial changes by hand
+newisct6 = isct6.branchPath(-1*in);
+newisct6.moveComponent('LSC pickoff',-8*in);
+newisct6.moveComponent('WFS A',11.7*in+12*in,'absolute');
+newisct6.addComponent(component.lens(-.229,11.7*in,'lens 2'));
+
+% a list of possible focal lengths for the new lens
+lens2list = component.lens([-.3436 -1.1456 -.2291 Inf]);
+
+%%
+% Run the optimization algorithm with custom cost function defined in <gouyCost.html gouyCost.m>.
+tic
+sol = newisct6.chooseComponents(...
+    'lens 2',lens2list,[-3*in 5*in],... % allow lens2 to be changed for other lenses in the list, and move -3 to +5 inches
+    'WFS B',[],[-17*in 30*in],...       % allow WFS2 to move -17 to +30 inches
+    '-r',...                            % make the movement ranges relative to current component locations
+    '-v',...                            % print out information while searching
+    '-c',@gouyCost);                    % use a custom cost function to minimize, defined in gouyCost.m
+toc
+
+%% The improved beam path
+% the optimal solution is the first element of the returned array
+bestisct6 = sol(1);
+figure(423)
+bestisct6.plotSummary();
+title('Improved beam path configuration')
+
+% print the components to the console
+bestisct6.components
+
+% print out some parameters of the new beam path
+zWFSA = bestisct6.component('WFS A').z;
+zWFSB = bestisct6.component('WFS B').z;
+qWFSA = bestisct6.qPropagate(zWFSA);
+qWFSB = bestisct6.qPropagate(zWFSB);
+disp(['WFS separation: ' num2str(bestisct6.gouySeparation('WFS A','WFS B')) ' deg'])
+disp(['Diameter on WFSA: ' num2str(qWFSA.beamWidth/(um*diameter)) ' um'])
+disp(['Diameter on WFSB: ' num2str(qWFSB.beamWidth/(um*diameter)) ' um'])
+
+##### SOURCE END #####
+--></body></html>

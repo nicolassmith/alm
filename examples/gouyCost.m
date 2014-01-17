@@ -1,3 +1,4 @@
+%% GouyCost - example beam path optimization cost function
 function cost = gouyCost(path)
     % this is an example cost function for use in optimizePath or
     % chooseComponents. It takes a beam path as an argument, and produces a
@@ -5,6 +6,7 @@ function cost = gouyCost(path)
     % try to minimize this cost function by moving components and/or switching
     % out components.
 
+    %% Beam size cost
     % beam size minima only happen on lenses or at waists
     zdomain = [[path.components.z] path.getWaists().'];
     qs = path.qPropagate(zdomain);
@@ -18,9 +20,11 @@ function cost = gouyCost(path)
     % strongly penalize small radii
     radiusCost = exp(-(smallestRadius/badRadius)^3);
 
+    %% Gouy phase cost
     % also penalize gouy phase that is not close to 90 degress
     angleCost = 1-sin(path.gouySeparation('WFS A','WFS B')*pi/180)^2;
 
+    %% Total cost
     % total cost is the sum of the two components
     cost = radiusCost + angleCost;
 end
