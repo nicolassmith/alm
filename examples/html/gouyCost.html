@@ -82,7 +82,7 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 
     <span class="comment">% strongly penalize small radii</span>
     radiusCost = exp(-(smallestRadius/badRadius)^3);
-</pre><h2>Gouy phase cost<a name="4"></a></h2><p>also penalize gouy phase that is not close to 90 degress</p><pre class="codeinput">    angleCost = 1-sin(path.gouySeparation(<span class="string">'WFS A'</span>,<span class="string">'WFS B'</span>)*pi/180)^2;
+</pre><h2>Gouy phase cost<a name="4"></a></h2><p>also penalize gouy phase that is not close to 90 degress</p><pre class="codeinput">    angleCost = cos(path.gouySeparation(<span class="string">'WFS A'</span>,<span class="string">'WFS B'</span>)*pi/180)^2;
 </pre><h2>Total cost<a name="5"></a></h2><p>total cost is the sum of the two components</p><pre class="codeinput">    cost = radiusCost + angleCost;
 </pre><pre class="codeinput"><span class="keyword">end</span>
 </pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2013b</a><br></p></div><!--
@@ -111,7 +111,7 @@ function cost = gouyCost(path)
 
     %% Gouy phase cost
     % also penalize gouy phase that is not close to 90 degress
-    angleCost = 1-sin(path.gouySeparation('WFS A','WFS B')*pi/180)^2;
+    angleCost = cos(path.gouySeparation('WFS A','WFS B')*pi/180)^2;
 
     %% Total cost
     % total cost is the sum of the two components

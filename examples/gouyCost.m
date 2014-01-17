@@ -22,7 +22,7 @@ function cost = gouyCost(path)
 
     %% Gouy phase cost
     % also penalize gouy phase that is not close to 90 degress
-    angleCost = 1-sin(path.gouySeparation('WFS A','WFS B')*pi/180)^2;
+    angleCost = cos(path.gouySeparation('WFS A','WFS B')*pi/180)^2;
 
     %% Total cost
     % total cost is the sum of the two components
