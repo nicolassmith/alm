@@ -1,5 +1,5 @@
-a la mode: mode matching and beam propagation solutions for MATLAB
-nicolas smith
+Al-Amode: mode matching and beam propagation solutions for MATLAB
+orignally written by Nicolas Smith
 
 It requires MATLAB 2008a, you should add the alm folder to your path
 (the @ directories should be in a folder that's in your path, but they
